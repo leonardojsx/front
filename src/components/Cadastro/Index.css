@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+
+/* body {
+  min-height: 100vh;
+  background: #3E66AE;
+  background: linear-gradient(162deg, rgba(62, 102, 174, 0.94) 19%, rgba(239, 167, 62, 0.58) 51%, rgba(88, 184, 101, 0.95) 83%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+} */
+
+#container-form {
+  background-color: rgba(255, 255, 255, 0.764);
+  width: 90vw;
+  height: 90dvh;
+  border-radius: 20px;
+  padding: 10px;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.434);
+}
+
+#form {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+}
+
+#title {
+  z-index: 2;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  font-family: "Montserrat", sans-serif;
+  letter-spacing: 1px;
+}
+
+.content-box {
+  margin-bottom: -12px;
+}
+
+.content-box label {
+  margin-left: 10px;
+  font-weight: 500;
+  font-size: 17px;
+}
+
+.input-box {
+  background-color: rgb(230, 230, 230);
+  width: 80vw;
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.233);
+  margin-top: 5px;
+
+
+  & .icon {
+    width: 30px;
+    height: 15px;
+    display: flex;
+    justify-content: center;
+    color: rgb(0, 0, 0);
+  }
+}
+
+.input {
+  width: 90%;
+  border: none;
+  padding: 8px;
+  border-radius: 10px;
+  background-color: rgb(230, 230, 230);
+  outline: none;
+}
+
+.input-box.erro {
+  border: 2px solid rgb(202, 0, 0) !important;
+}
+
+.semErro {
+  display: none;
+}
+
+.comErro {
+  color: red;
+  padding-left: 10px;
+  font-size: 13px;
+}
+
+.btn {
+  padding: 12px;
+  width: 70vw;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background-color: #3e65aedb;
+  box-shadow: 0px 0px 4px 1px rgba(0, 0, 0, 0.194);
+  transition: scale .3s ease;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.spin {
+  color: white;
+  animation: spin 3s infinite linear; 
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg); 
+  }
+  to {
+    transform: rotate(360deg); 
+  }
+}
+
+.btn:hover {
+  scale: 1.05;
+}
+
+#cad a {
+  text-decoration: none;
+  color: blue;
+}
+
+#image {
+  display: flex;
+  justify-content: center;
+}
+
+#img {
+  width: 60px;
+  height: 60px;
+  z-index: 1;
+  margin-top: 2px;
+}

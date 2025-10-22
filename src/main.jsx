@@ -6,6 +6,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Cadastro from './components/Cadastro/App.jsx';
 import Login from './components/Login/App.jsx';
 import Home from './components/Home/App.jsx';
+import Treinamento from './components/Treinamento/App.jsx';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import AuthLayout from './components/AuthLayout/AuthLayout.jsx';
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       { path: "/home", element: <Home /> },
+      { path: "/treinamento", element: <Treinamento /> },
     ]
   },
 ]);

@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Index.css';
 import logo from '../../images/logo.png';
 
@@ -9,6 +10,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import { FaSearch, FaEdit, FaTrashAlt } from "react-icons/fa";
 import { IoHomeSharp } from "react-icons/io5";
 import { SiCashapp } from "react-icons/si";
+import { MdSchool } from "react-icons/md";
 import HamburgerButton from './HamburgerButton.jsx';
 import Sidebar from './Sidebar.jsx';
 
@@ -16,6 +18,8 @@ const BarChart = React.lazy(() => import('./BarChart.jsx'));
 
 function Home() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [registros, setRegistros] = useState([]);
   const [loadingRegistros, setLoadingRegistros] = useState(true);
@@ -118,6 +122,39 @@ function Home() {
     const dataHoraAtual = agora.toISOString().slice(0, 16);
     setFormDataHora(dataHoraAtual);
   }, [registrosMock]);
+
+  // Effect para lidar com redirecionamento do treinamento
+  useEffect(() => {
+    if (location.state?.redirectToCommissions && location.state?.prefilledData) {
+      const { cnpj, titulo } = location.state.prefilledData;
+      
+      // Mudar para a view de comissões
+      setActiveView('comissoes');
+      
+      // Pré-preencher os dados
+      if (cnpj) {
+        setFormCnpj(formatarCNPJ(cnpj));
+      }
+      if (titulo) {
+        setFormTitulo(titulo);
+      }
+      
+      // Limpar o state para evitar re-execução
+      navigate('/home', { replace: true, state: {} });
+      
+      // Mostrar toast informativo
+      toast.info('Dados do treinamento carregados no formulário de comissão!', {
+        ...toastConfig,
+        autoClose: 3000,
+      });
+    } else if (location.state?.activeView) {
+      // Navegar para a view específica vinda da página de treinamento
+      setActiveView(location.state.activeView);
+      
+      // Limpar o state
+      navigate('/home', { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
 
 
@@ -605,7 +642,12 @@ function Home() {
 
   return (
     <>
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onNavigate={setActiveView} />
+      <Sidebar 
+        open={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        onNavigate={setActiveView} 
+        currentPage={activeView}
+      />
       <div id="container-menu" role="banner">
         <div className="menu-toggle-wrapper">
           <HamburgerButton open={sidebarOpen} onClick={() => setSidebarOpen(v => !v)} />
@@ -617,6 +659,7 @@ function Home() {
       <div id="pages" role="navigation" aria-label="Páginas">
         <button onClick={() => setActiveView('inicio')} className={`btn-pages ${activeView === 'inicio' ? 'active' : ''}`}><i><IoHomeSharp /></i>Início</button>
         <button onClick={() => setActiveView('comissoes')} id='btn-pg' className={`btn-pages ${activeView === 'comissoes' ? 'active' : ''}`}><i><SiCashapp /></i>Comissões</button>
+        <button onClick={() => navigate('/treinamento')} className={`btn-pages`}><i><MdSchool /></i>Treinamento</button>
         <button onClick={() => setActiveView('pesquisar')} className={`btn-pages ${activeView === 'pesquisar' ? 'active' : ''}`}><i><FaSearch /></i>Pesquisar</button>
       </div>
 
@@ -668,7 +711,7 @@ function Home() {
           </>
         )}
 
-        {activeView === 'comissoes' && (
+        {activeView === 'comissoes' && user?.role === 'admin' && (
           <div className="form-container">
             <form className="form-card" onSubmit={handleSubmitCadastro}>
               <h1>{editingComissao ? 'Editar Comissão' : 'Nova Comissão'}</h1>
@@ -813,6 +856,82 @@ function Home() {
           </div>
         )}
 
+        {activeView === 'comissoes' && user?.role === 'sup' && (
+          <div className="summary-container">
+            <div className="summary-header">
+              <h1>Resumo de Comissões</h1>
+              <p className="subtitle">Visualização das suas comissões cadastradas</p>
+            </div>
+            
+            <div className="summary-stats">
+              <div className="stat-card">
+                <div className="stat-icon">
+                  <SiCashapp />
+                </div>
+                <div className="stat-content">
+                  <h3>Total de Comissões</h3>
+                  <p className="stat-value">{filteredRegistros.length}</p>
+                </div>
+              </div>
+              
+              <div className="stat-card">
+                <div className="stat-icon">
+                  <SiCashapp />
+                </div>
+                <div className="stat-content">
+                  <h3>Valor Total</h3>
+                  <p className="stat-value">{totalComissoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="summary-list">
+              <h2>Últimas Comissões</h2>
+              <div className="commission-list">
+                {loadingRegistros ? (
+                  <div className="loading-state">
+                    <p>Carregando comissões...</p>
+                  </div>
+                ) : filteredRegistros.length === 0 ? (
+                  <div className="empty-state">
+                    <SiCashapp className="empty-icon" />
+                    <h3>Nenhuma comissão encontrada</h3>
+                    <p>Suas comissões aparecerão aqui quando forem cadastradas pelo administrador.</p>
+                  </div>
+                ) : (
+                  filteredRegistros
+                    .slice(0, 10) // Mostrar apenas as 10 últimas
+                    .map((reg) => {
+                      const dataFormatada = reg.dataHora
+                        ? new Intl.DateTimeFormat('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }).format(new Date(reg.dataHora))
+                        : 'Data não disponível';
+
+                      return (
+                        <div key={reg.id} className="commission-item readonly">
+                          <div className="commission-info">
+                            <h3>{reg.titulo}</h3>
+                            <p className="commission-cnpj">{reg.cnpj}</p>
+                            <p className="commission-date">{dataFormatada}</p>
+                          </div>
+                          <div className="commission-value">
+                            <span className="value">{reg.valorPorcentagem?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            <span className="percentage">{reg.porcentagem}%</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeView === 'pesquisar' && (
           <div className="search-container">
             <div className="search-header">
@@ -898,39 +1017,48 @@ function Home() {
                     <i>×</i> Limpar Seleção ({selectedIds.length})
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    if (selectedIds.length === 1) {
-                      const selectedId = selectedIds[0];
-                      console.log('ID selecionado:', selectedId, 'Tipo:', typeof selectedId);
-                      console.log('Registros disponíveis:', filteredRegistros.map(r => ({ id: r.id, tipo: typeof r.id })));
+                {user?.role === 'admin' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (selectedIds.length === 1) {
+                          const selectedId = selectedIds[0];
+                          console.log('ID selecionado:', selectedId, 'Tipo:', typeof selectedId);
+                          console.log('Registros disponíveis:', filteredRegistros.map(r => ({ id: r.id, tipo: typeof r.id })));
 
-                      const comissaoParaEditar = filteredRegistros.find(r =>
-                        r.id === selectedId || Number(r.id) === Number(selectedId)
-                      );
+                          const comissaoParaEditar = filteredRegistros.find(r =>
+                            r.id === selectedId || Number(r.id) === Number(selectedId)
+                          );
 
-                      console.log('Comissão encontrada para edição:', comissaoParaEditar);
+                          console.log('Comissão encontrada para edição:', comissaoParaEditar);
 
-                      if (comissaoParaEditar) {
-                        carregarComissaoParaEdicao(comissaoParaEditar);
-                      } else {
-                        toast.error('Erro: Comissão não encontrada para edição.');
+                          if (comissaoParaEditar) {
+                            carregarComissaoParaEdicao(comissaoParaEditar);
+                          } else {
+                            toast.error('Erro: Comissão não encontrada para edição.');
+                          }
+                        }
+                      }}
+                      disabled={selectedIds.length !== 1}
+                      title={
+                        selectedIds.length === 0 ? 'Clique em um item da tabela para selecioná-lo e depois editar' :
+                          selectedIds.length > 1 ? `${selectedIds.length} itens selecionados - EDIÇÃO DESABILITADA: Selecione apenas 1 item para editar` :
+                            'Editar o item selecionado'
                       }
-                    }
-                  }}
-                  disabled={selectedIds.length !== 1}
-                  title={
-                    selectedIds.length === 0 ? 'Clique em um item da tabela para selecioná-lo e depois editar' :
-                      selectedIds.length > 1 ? `${selectedIds.length} itens selecionados - EDIÇÃO DESABILITADA: Selecione apenas 1 item para editar` :
-                        'Editar o item selecionado'
-                  }
-                  className="btn-edit"
-                >
-                  <i><FaEdit /></i> Editar
-                </button>
-                <button onClick={abrirModalExclusao} className="btn-delete" disabled={selectedIds.length === 0}>
-                  <i><FaTrashAlt /></i> Excluir ({selectedIds.length})
-                </button>
+                      className="btn-edit"
+                    >
+                      <i><FaEdit /></i> Editar
+                    </button>
+                    <button onClick={abrirModalExclusao} className="btn-delete" disabled={selectedIds.length === 0}>
+                      <i><FaTrashAlt /></i> Excluir ({selectedIds.length})
+                    </button>
+                  </>
+                )}
+                {user?.role === 'sup' && (
+                  <div className="role-info">
+                    <p>🔒 Modo visualização - Apenas administradores podem editar comissões</p>
+                  </div>
+                )}
               </div>
             </div>
             <div className="results-section">

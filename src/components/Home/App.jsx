@@ -92,7 +92,6 @@ function Home() {
       setTotalComissoes(totalCalculado);
 
     } catch (err) {
-      console.warn('Erro ao obter registros, usando fallback mock:', err);
       setRegistros(registrosMock);
       setRegistrosError(err);
     } finally {
@@ -105,7 +104,6 @@ function Home() {
       const res = await api.get('/users');
       setUsuarios(res.data || []);
     } catch (err) {
-      console.error('Erro ao buscar usuários:', err);
       setUsuarios([]);
       toast.warn('Não foi possível carregar a lista de usuários. Tente recarregar a página.', {
         ...toastConfig,
@@ -114,12 +112,59 @@ function Home() {
     }
   }
 
+  // Função para formatar data/hora para datetime-local (considerando fuso horário local)
+  const formatarDataHoraParaInput = (data) => {
+    if (!data) return '';
+    
+    try {
+      const dataObj = new Date(data);
+      
+      // Verificar se a data é válida
+      if (isNaN(dataObj.getTime())) {
+        console.warn('Data inválida recebida:', data);
+        return '';
+      }
+      
+      // Obter o fuso horário local e criar data ajustada
+      const ano = dataObj.getFullYear();
+      const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+      const dia = String(dataObj.getDate()).padStart(2, '0');
+      const hora = String(dataObj.getHours()).padStart(2, '0');
+      const minuto = String(dataObj.getMinutes()).padStart(2, '0');
+      
+      return `${ano}-${mes}-${dia}T${hora}:${minuto}`;
+    } catch (error) {
+      console.error('Erro ao formatar data para input:', error);
+      return '';
+    }
+  };
+
+  // Função para converter data do input para formato padrão ISO
+  const converterDataDoInput = (dataInput) => {
+    if (!dataInput) return '';
+    
+    try {
+      // O input datetime-local já vem no formato local, apenas convertemos para ISO
+      const dataObj = new Date(dataInput);
+      
+      if (isNaN(dataObj.getTime())) {
+        console.warn('Data do input inválida:', dataInput);
+        return '';
+      }
+      
+      return dataObj.toISOString();
+    } catch (error) {
+      console.error('Erro ao converter data do input:', error);
+      return '';
+    }
+  };
+
   useEffect(() => {
     fetchRegistros();
     fetchUsuarios();
 
     const agora = new Date();
-    const dataHoraAtual = agora.toISOString().slice(0, 16);
+    const dataHoraAtual = formatarDataHoraParaInput(agora);
     setFormDataHora(dataHoraAtual);
   }, [registrosMock]);
 
@@ -386,7 +431,7 @@ function Home() {
     setFormPorcentagem('');
     setFormUsuarioSelecionado('');
     const agora = new Date();
-    const dataHoraAtual = agora.toISOString().slice(0, 16);
+    const dataHoraAtual = formatarDataHoraParaInput(agora);
     setFormDataHora(dataHoraAtual);
     setFormCnpj('');
     setEditingComissao(null);
@@ -408,8 +453,6 @@ function Home() {
   };
 
   const carregarComissaoParaEdicao = (comissao) => {
-    console.log('Carregando comissão para edição:', comissao);
-
     if (!comissao) {
       toast.error('Erro: Dados da comissão não encontrados.');
       return;
@@ -419,7 +462,6 @@ function Home() {
       setFormTitulo(comissao.titulo || '');
 
       const valorParaFormatar = comissao.valorPorcentagem || comissao.valor;
-      console.log('Valor encontrado:', valorParaFormatar);
 
       if (valorParaFormatar) {
         const valorEmCentavos = valorParaFormatar < 1000 ? valorParaFormatar * 100 : valorParaFormatar;
@@ -430,8 +472,7 @@ function Home() {
       setFormUsuarioSelecionado(comissao.idUsuario || comissao.usuario_id || '');
 
       if (comissao.data) {
-        const data = new Date(comissao.data);
-        const dataFormatada = data.toISOString().slice(0, 16);
+        const dataFormatada = formatarDataHoraParaInput(comissao.data);
         setFormDataHora(dataFormatada);
       }
 
@@ -444,7 +485,6 @@ function Home() {
         autoClose: 2000,
       });
     } catch (error) {
-      console.error('Erro ao carregar dados para edição:', error);
       toast.error('Erro ao carregar dados para edição.');
     }
   };
@@ -494,7 +534,7 @@ function Home() {
       porcentagem: parseFloat(formPorcentagem),
       valorPorcentagem: valorComissaoCalculado,
       idUsuario: formUsuarioSelecionado,
-      data: formDataHora,
+      data: converterDataDoInput(formDataHora),
       temTaxa: true
     };
 
@@ -524,7 +564,6 @@ function Home() {
       setActiveView('pesquisar');
       limparFormulario();
     } catch (error) {
-      console.error('Erro ao cadastrar comissão:', error);
       const mensagemErro = error.response?.data?.message || error.message || 'Erro desconhecido';
 
       toast.update(toastId, {
@@ -540,18 +579,14 @@ function Home() {
   };
 
   const handleSelectNew = (id) => {
-    console.log('🔥 SELEÇÃO MÚLTIPLA! ID:', id);
-
     setSelectedIds(prevIds => {
       const isCurrentlySelected = prevIds.includes(id);
 
       if (isCurrentlySelected) {
         const newIds = prevIds.filter(selectedId => selectedId !== id);
-        console.log('🔴 Deselecionando:', id, 'Lista:', newIds);
         return newIds;
       } else {
         const newIds = [...prevIds, id];
-        console.log('🟢 Selecionando:', id, 'Lista:', newIds);
         return newIds;
       }
     });
@@ -563,17 +598,12 @@ function Home() {
 
     if (allSelected) {
       setSelectedIds([]);
-      console.log('🔄 Deselecionando todos da página');
     } else {
       setSelectedIds(allCurrentIds);
-      console.log('🔄 Selecionando todos da página:', allCurrentIds);
     }
   };
 
   const handleSelect = (id) => {
-    console.log('🔥 CLIQUE! ID:', id, 'Tipo:', typeof id);
-    console.log('🔍 Lista atual de selecionados:', selectedIds);
-
     setSelectedIds(prevIds => {
       const numId = Number(id);
       const isCurrentlySelected = prevIds.some(selectedId => Number(selectedId) === numId);
@@ -581,23 +611,9 @@ function Home() {
       let newSelection;
       if (isCurrentlySelected) {
         newSelection = prevIds.filter(selectedId => Number(selectedId) !== numId);
-        console.log('🔴 DESELECIONANDO:', id);
-        console.log('🔍 Lista após deseleção:', newSelection);
       } else {
         newSelection = [...prevIds, numId];
-        console.log('� SELECIONANDO:', id);
-        console.log('🔍 Lista após seleção:', newSelection);
       }
-
-      console.log('📋 NOVA LISTA FINAL:', newSelection);
-
-      setTimeout(() => {
-        const selectedRows = document.querySelectorAll('.clickable-row.selected');
-        console.log('🎯 Linhas selecionadas no DOM:', selectedRows.length);
-        selectedRows.forEach((row, index) => {
-          console.log(`Linha ${index + 1}:`, row.className, row.style.backgroundColor);
-        });
-      }, 100);
 
       return newSelection;
     });
@@ -626,7 +642,6 @@ function Home() {
       setShowDeleteModal(false);
       await fetchRegistros();
     } catch (error) {
-      console.error('Erro ao excluir comissões:', error);
       toast.error('Erro ao excluir comissões. Tente novamente.', {
         ...toastConfig,
         autoClose: 4000,
@@ -684,8 +699,16 @@ function Home() {
             <div id="prev-container">
               <div id="prev-comissoes">
                 <h1>Últimos registros</h1>
-                {loadingRegistros ? (<div style={{ padding: 12, color: '#666' }}>Carregando...</div>)
-                  : (registros.slice(0, 5).map(reg => {
+                {loadingRegistros ? (
+                  <div className="registros-loading">Carregando registros...</div>
+                ) : registrosError ? (
+                  <div className="registros-error">Erro ao carregar registros</div>
+                ) : registros.length === 0 ? (
+                  <div className="registros-empty">
+                    <span>Nenhum registro encontrado</span>
+                  </div>
+                ) : (
+                  registros.slice(0, 5).map(reg => {
                     const dataFormatada = reg.data ?
                       new Date(reg.data).toLocaleDateString('pt-BR', {
                         day: '2-digit',
@@ -704,8 +727,8 @@ function Home() {
                         <p className="valor-registro">{reg.valorPorcentagem?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                       </div>
                     );
-                  }))}
-                {registrosError && <div style={{ color: '#c0392b' }}>Erro ao carregar.</div>}
+                  })
+                )}
               </div>
             </div>
           </>
@@ -1023,14 +1046,9 @@ function Home() {
                       onClick={() => {
                         if (selectedIds.length === 1) {
                           const selectedId = selectedIds[0];
-                          console.log('ID selecionado:', selectedId, 'Tipo:', typeof selectedId);
-                          console.log('Registros disponíveis:', filteredRegistros.map(r => ({ id: r.id, tipo: typeof r.id })));
-
                           const comissaoParaEditar = filteredRegistros.find(r =>
                             r.id === selectedId || Number(r.id) === Number(selectedId)
                           );
-
-                          console.log('Comissão encontrada para edição:', comissaoParaEditar);
 
                           if (comissaoParaEditar) {
                             carregarComissaoParaEdicao(comissaoParaEditar);
@@ -1081,7 +1099,6 @@ function Home() {
                       ) : (
                         currentItems.map(r => {
                           const isSelected = selectedIds.includes(r.id);
-                          console.log(`� Registro ${r.id}: selecionado=${isSelected}, selectedIds=[${selectedIds}]`);
 
                           return (
                             <tr

@@ -35,8 +35,6 @@ export const AuthProvider = ({ children }) => {
       
       return true;
     } catch (error) {
-      console.error('Erro no login:', error.response?.data?.message || error.message);
-      
       // Limpar dados de autenticação em caso de erro
       localStorage.removeItem('@App:token');
       localStorage.removeItem('@App:user');

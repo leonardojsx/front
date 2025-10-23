@@ -86,39 +86,76 @@ function Cadastro() {
       <ToastContainer />
       <div id="container-form">
         <form action="" id='form'>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
-            <div id="image"><img src={logo} id='img' /></div>
-            <h1 id='title'>Cadastro <br />BMS</h1>
-          </div>
-          <div className="content-box">
-            <label htmlFor="nome">Nome</label>
-            <div className={`input-box ${isValid.nome.error ? 'erro' : ''}`}>
-              <input type="text" name="nome" id="nome" className='input' placeholder='Digite aqui seu nome' ref={inputNome} />
-              <div className="icon"><BsFillPersonFill /></div>
+          <div className="header-section">
+            <div id="image">
+              <img src={logo} id='img' alt="Logo Comissões BMS" />
             </div>
-            {isValid.nome.error && <div className="comErro">{isValid.nome.message}</div>}
+            <h1 id='title'>Cadastro BMS</h1>
+            <p className="subtitle">Crie sua conta para acessar o sistema</p>
           </div>
-          <div className="content-box">
-            <label htmlFor="email">E-mail</label>
-            <div className={`input-box ${isValid.email.error ? 'erro' : ''}`}>
-              <input type="email" name="email" id="email" className='input' placeholder='exemplo@gmail.com' ref={inputEmail} />
-              <div className="icon"><FaEnvelope /></div>
+          
+          <div className="form-section">
+            <div className="content-box">
+              <label htmlFor="nome">Nome completo</label>
+              <div className={`input-box ${isValid.nome.error ? 'erro' : ''}`}>
+                <div className="icon"><BsFillPersonFill /></div>
+                <input 
+                  type="text" 
+                  name="nome" 
+                  id="nome" 
+                  className='input' 
+                  placeholder='Digite seu nome completo' 
+                  ref={inputNome} 
+                />
+              </div>
+              {isValid.nome.error && <div className="comErro">{isValid.nome.message}</div>}
             </div>
-            {isValid.email.error && <div className="comErro">{isValid.email.message}</div>}
-          </div>
-          <div className="content-box">
-            <label htmlFor="password">Senha</label>
-            <div className={`input-box ${isValid.senha.error ? 'erro' : ''}`}>
-              <input type="password" name="password" id="password" className='input' placeholder='Digite aqui sua senha' ref={inputPassword} />
-              <div className="icon"><FaEyeSlash /></div>
+            
+            <div className="content-box">
+              <label htmlFor="email">E-mail</label>
+              <div className={`input-box ${isValid.email.error ? 'erro' : ''}`}>
+                <div className="icon"><FaEnvelope /></div>
+                <input 
+                  type="email" 
+                  name="email" 
+                  id="email" 
+                  className='input' 
+                  placeholder='exemplo@gmail.com' 
+                  ref={inputEmail} 
+                />
+              </div>
+              {isValid.email.error && <div className="comErro">{isValid.email.message}</div>}
             </div>
-            {isValid.senha.error && <div className="comErro">{isValid.senha.message}</div>}
-          </div>
-          <button className='btn' type='button' onClick={createUser} disabled={isLoading} style={{ pointerEvents: isLoading ? 'none' : 'auto' }}>
-            {isLoading ? 'Salvando...' : 'Cadastre-se'}
-          </button>
-          <div id="cad">
-            <p>Já tem conta? <Link to="/login">Faça login</Link></p>
+            
+            <div className="content-box">
+              <label htmlFor="password">Senha</label>
+              <div className={`input-box ${isValid.senha.error ? 'erro' : ''}`}>
+                <div className="icon"><FaEyeSlash /></div>
+                <input 
+                  type="password" 
+                  name="password" 
+                  id="password" 
+                  className='input' 
+                  placeholder='Digite uma senha segura' 
+                  ref={inputPassword} 
+                />
+              </div>
+              {isValid.senha.error && <div className="comErro">{isValid.senha.message}</div>}
+            </div>
+            
+            <button 
+              className='btn' 
+              type='button' 
+              onClick={createUser} 
+              disabled={isLoading} 
+              style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
+            >
+              {isLoading ? 'Criando conta...' : 'Cadastrar'}
+            </button>
+            
+            <div id="cad">
+              <p>Já tem conta? <Link to="/login">Faça login</Link></p>
+            </div>
           </div>
         </form>
       </div>

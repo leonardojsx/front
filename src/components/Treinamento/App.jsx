@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaPlus, FaEdit, FaChevronLeft, FaChevronRight, FaSearch } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaChevronLeft, FaChevronRight, FaSearch } from "react-icons/fa";
 import { IoHomeSharp } from "react-icons/io5";
 import { SiCashapp } from "react-icons/si";
 import { MdSchool } from "react-icons/md";
@@ -28,6 +28,8 @@ function Treinamento() {
   const [showCommissionModal, setShowCommissionModal] = useState(false);
   const [currentTrainingData, setCurrentTrainingData] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [trainingToDelete, setTrainingToDelete] = useState(null);
 
   // Estados do formulário
   const [trainingForm, setTrainingForm] = useState({
@@ -118,15 +120,10 @@ function Treinamento() {
       const dataInicio = formatLocalDate(weekDays[0]);
       const dataFim = formatLocalDate(weekDays[4]) + 'T23:59:59';
 
-      console.log('🔍 Buscando treinamentos:', { dataInicio, dataFim });
-      
       const res = await api.get(`/training?dataInicio=${dataInicio}&dataFim=${dataFim}`);
-      
-      console.log('📋 Treinamentos encontrados:', res.data?.length || 0, res.data);
       
       setTreinamentos(res.data || []);
     } catch (err) {
-      console.error('Erro ao buscar treinamentos:', err);
       setTreinamentos([]);
     } finally {
       setLoadingTreinamentos(false);
@@ -138,7 +135,6 @@ function Treinamento() {
       const res = await api.get('/users');
       setUsuarios(res.data || []);
     } catch (err) {
-      console.error('Erro ao buscar usuários:', err);
       setUsuarios([]);
     }
   }
@@ -311,7 +307,7 @@ function Treinamento() {
               toast.info('Treinamento salvo. Já existe comissão cadastrada para este CNPJ.');
             }
           } catch (err) {
-            console.error('Erro ao verificar comissões:', err);
+            // Silenciar erro de verificação de comissões
           }
         }
       }
@@ -319,7 +315,6 @@ function Treinamento() {
       closeTrainingModal();
       await fetchTreinamentos();
     } catch (error) {
-      console.error('Erro ao salvar treinamento:', error);
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
@@ -353,6 +348,39 @@ function Treinamento() {
       usuario_id: training.usuario_id || ''
     });
     setShowTrainingModal(true);
+  };
+
+  const confirmDeleteTraining = (training) => {
+    setTrainingToDelete(training);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteTraining = async () => {
+    if (!trainingToDelete) return;
+
+    try {
+      await api.delete(`/training/${trainingToDelete.id}`);
+      
+      toast.success('Treinamento excluído com sucesso!', {
+        ...toastConfig,
+        autoClose: 3000,
+      });
+
+      setShowDeleteModal(false);
+      setTrainingToDelete(null);
+      await fetchTreinamentos();
+    } catch (error) {
+      const mensagemErro = error.response?.data?.message || error.message || 'Erro desconhecido';
+      toast.error(`Erro ao excluir treinamento: ${mensagemErro}`, {
+        ...toastConfig,
+        autoClose: 5000,
+      });
+    }
+  };
+
+  const cancelDeleteTraining = () => {
+    setShowDeleteModal(false);
+    setTrainingToDelete(null);
   };
 
   const getTrainingsByDay = (date) => {
@@ -400,14 +428,16 @@ function Treinamento() {
       <div className="training-header">
         <h1>Treinamentos da Semana</h1>
         <div className="week-navigation">
-          <button onClick={() => navigateWeek(-1)} className="btn-week-nav">
-            <FaChevronLeft /> Semana Anterior
+          <button onClick={() => navigateWeek(-1)} className="btn-week-nav btn-week-nav-mobile">
+            <FaChevronLeft />
+            <span className="week-nav-text">Semana Anterior</span>
           </button>
           <span className="current-week">
             {getWeekDays(currentWeek)[0].toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - {getWeekDays(currentWeek)[4].toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
           </span>
-          <button onClick={() => navigateWeek(1)} className="btn-week-nav">
-            Próxima Semana <FaChevronRight />
+          <button onClick={() => navigateWeek(1)} className="btn-week-nav btn-week-nav-mobile">
+            <span className="week-nav-text">Próxima Semana</span>
+            <FaChevronRight />
           </button>
         </div>
       </div>
@@ -443,13 +473,22 @@ function Treinamento() {
                         {new Date(training.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(training.data_fim).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </div>
                       <div className={`training-status ${training.status}`}>{training.status}</div>
-                      <button
-                        onClick={() => editTraining(training)}
-                        className="btn-edit-training"
-                        title="Editar treinamento"
-                      >
-                        <FaEdit />
-                      </button>
+                      <div className="training-actions">
+                        <button
+                          onClick={() => editTraining(training)}
+                          className="btn-edit-training"
+                          title="Editar treinamento"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => confirmDeleteTraining(training)}
+                          className="btn-delete-training"
+                          title="Excluir treinamento"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -624,6 +663,53 @@ function Treinamento() {
                 className="btn-modal-confirm"
               >
                 Cadastrar Comissão
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content delete-modal">
+            <div className="modal-header">
+              <h3>Confirmar Exclusão</h3>
+            </div>
+            <div className="modal-body">
+              <p>
+                <strong>⚠️ Atenção!</strong>
+              </p>
+              <p>
+                Você tem certeza que deseja excluir este treinamento?
+              </p>
+              {trainingToDelete && (
+                <div className="training-data-box">
+                  <strong>Dados do treinamento:</strong>
+                  <div>📋 Título: {trainingToDelete.titulo}</div>
+                  <div>🏢 CNPJ: {formatarCNPJ(trainingToDelete.cnpj)}</div>
+                  <div>📅 Data: {new Date(trainingToDelete.data_inicio).toLocaleDateString('pt-BR')}</div>
+                  <div>👤 Usuário: {trainingToDelete.usuario || 'Não atribuído'}</div>
+                </div>
+              )}
+              <p className="warning-text">
+                ⚠️ Esta ação não pode ser desfeita!
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                onClick={cancelDeleteTraining}
+                className="btn-modal-cancel"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteTraining}
+                className="btn-modal-delete"
+              >
+                Excluir Treinamento
               </button>
             </div>
           </div>

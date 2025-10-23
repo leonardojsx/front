@@ -203,7 +203,6 @@ const BarChart = () => {
           throw new Error("O formato dos dados recebidos não é um array.");
         }
       } catch (err) {
-        console.error("Erro ao buscar dados do gráfico:", err);
         setError("Falha ao carregar os dados. Verifique a API e tente novamente.");
       } finally {
         setLoading(false);

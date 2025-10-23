@@ -56,7 +56,6 @@ function Login() {
         displayError('Credenciais inválidas. Verifique seu email e senha.');
       }
     } catch (error) {
-      console.error('Erro no login:', error);
       displayError('Erro ao conectar com o servidor. Tente novamente.');
     } finally {
       setIsLoading(false);
@@ -68,31 +67,60 @@ function Login() {
       <ToastContainer />
       <div id="container-form">
         <form action="" id='form'>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
-            <div id="image"><img src={logo} id='img' /></div>
-            <h1 id='title'>Comissões <br />BMS</h1>
-          </div>
-          <div className="content-box">
-            <label htmlFor="email">E-mail</label>
-            <div className={`input-box ${isValid.email.error ? 'erro' : ''}`}>
-              <input type="email" name="email" id="email" className="input" placeholder='exemplo@gmail.com' ref={inputEmail} />
-              <div className="icon"> <FaEnvelope /> </div>
+          <div className="header-section">
+            <div id="image">
+              <img src={logo} id='img' alt="Logo Comissões BMS" />
             </div>
-            {isValid.email.error && <div className="comErro">{isValid.email.message}</div>}
+            <h1 id='title'>Comissões BMS</h1>
+            <p className="subtitle">Faça login para acessar o sistema</p>
           </div>
-          <div className="content-box">
-            <label htmlFor="password">Senha</label>
-            <div className={`input-box ${isValid.senha.error ? 'erro' : ''}`}>
-              <input type="password" name="password" id="password" className='input' placeholder='Digite aqui sua senha' ref={inputPassword} />
-              <div className="icon"> <FaEyeSlash /> </div>
+          
+          <div className="form-section">
+            <div className="content-box">
+              <label htmlFor="email">E-mail</label>
+              <div className={`input-box ${isValid.email.error ? 'erro' : ''}`}>
+                <div className="icon"> <FaEnvelope /> </div>
+                <input 
+                  type="email" 
+                  name="email" 
+                  id="email" 
+                  className="input" 
+                  placeholder='exemplo@gmail.com' 
+                  ref={inputEmail} 
+                />
+              </div>
+              {isValid.email.error && <div className="comErro">{isValid.email.message}</div>}
             </div>
-            {isValid.senha.error && <div className="comErro">{isValid.senha.message}</div>}
-          </div>
-          <button className='btn' type='button' onClick={acess} style={{ pointerEvents: isLoading ? 'none' : 'auto' }}>
-            {isLoading ? <ImSpinner9 className='spin' size={15} /> : 'Entrar'}
-          </button>
-          <div id="cad">
-            <p>Não tem conta? <Link to="/register">Cadastre-se</Link></p>
+            
+            <div className="content-box">
+              <label htmlFor="password">Senha</label>
+              <div className={`input-box ${isValid.senha.error ? 'erro' : ''}`}>
+                <div className="icon"> <FaEyeSlash /> </div>
+                <input 
+                  type="password" 
+                  name="password" 
+                  id="password" 
+                  className='input' 
+                  placeholder='Digite aqui sua senha' 
+                  ref={inputPassword} 
+                />
+              </div>
+              {isValid.senha.error && <div className="comErro">{isValid.senha.message}</div>}
+            </div>
+            
+            <button 
+              className='btn' 
+              type='button' 
+              onClick={acess} 
+              disabled={isLoading}
+              style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
+            >
+              {isLoading ? <ImSpinner9 className='spin' size={18} /> : 'Entrar'}
+            </button>
+            
+            <div id="cad">
+              <p>Não tem conta? <Link to="/register">Cadastre-se</Link></p>
+            </div>
           </div>
         </form>
       </div>

@@ -2603,6 +2603,7 @@ body.no-scroll {
   align-items: center;
   justify-content: center;
   height: 450px;
+  width: 100%;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: 16px;
   border: 1px solid rgba(99, 102, 241, 0.1);
@@ -2694,7 +2695,7 @@ body.no-scroll {
   .chart-loading-container,
   .chart-error-container,
   .chart-empty-container {
-    height: 350px;
+    height: 100%;
   }
 }
 
@@ -2707,7 +2708,7 @@ body.no-scroll {
   .chart-loading-container,
   .chart-error-container,
   .chart-empty-container {
-    height: 480px;
+    height: 100%;
   }
 }
 
@@ -2719,7 +2720,7 @@ body.no-scroll {
   .chart-loading-container,
   .chart-error-container,
   .chart-empty-container {
-    height: 540px;
+    height:100%;
   }
 }
 

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: 'https://back-cu2v.onrender.com'
+  baseURL: 'https://outros-sistemas-xamuel-app.nk9iqz.easypanel.host'
 })
 
 // Interceptor para adicionar token automaticamente
@@ -26,7 +26,7 @@ api.interceptors.response.use(
       // Token expirado ou inválido
       localStorage.removeItem('@App:token');
       localStorage.removeItem('@App:user');
-      window.location.href = '/login';
+      // window.location.href = '/login';
     }
     return Promise.reject(error);
   }

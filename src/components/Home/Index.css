@@ -2605,7 +2605,7 @@ body.no-scroll {
   height: 450px;
   width: 100%;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 16px;
+  border-radius: 10px;
   border: 1px solid rgba(99, 102, 241, 0.1);
 }
 

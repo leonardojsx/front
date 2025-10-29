@@ -925,14 +925,14 @@ function Home() {
                   filteredRegistros
                     .slice(0, 10) // Mostrar apenas as 10 últimas
                     .map((reg) => {
-                      const dataFormatada = reg.dataHora
+                      const dataFormatada = reg.data
                         ? new Intl.DateTimeFormat('pt-BR', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit'
-                          }).format(new Date(reg.dataHora))
+                          }).format(new Date(reg.data))
                         : 'Data não disponível';
 
                       return (

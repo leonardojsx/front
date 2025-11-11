@@ -25,6 +25,7 @@ function Home() {
   const [loadingRegistros, setLoadingRegistros] = useState(true);
   const [registrosError, setRegistrosError] = useState(null);
   const [totalComissoes, setTotalComissoes] = useState(0);
+  const [mesAnoAtual, setMesAnoAtual] = useState('');
 
   const [selectedId, setSelectedId] = useState(null);
 
@@ -70,6 +71,41 @@ function Home() {
   const registrosMock = useMemo(() => ([
   ]), []);
 
+  // Função para buscar dados do mês atual (para dashboard)
+  async function fetchRegistrosMesAtual() {
+    setLoadingRegistros(true);
+    setRegistrosError(null);
+    try {
+      const hoje = new Date();
+      const anoAtual = hoje.getFullYear();
+      const mesAtual = hoje.getMonth() + 1;
+
+      const res = await api.get(`/schedule?ano=${anoAtual}&mes=${mesAtual}`);
+      const dadosApi = Array.isArray(res.data) && res.data.length > 0 ? res.data : registrosMock;
+
+      const dadosOrdenados = dadosApi.sort((a, b) => {
+        const dataA = new Date(a.data || a.created_at || 0);
+        const dataB = new Date(b.data || b.created_at || 0);
+        return dataB - dataA;
+      });
+
+      setRegistros(dadosOrdenados);
+
+      const totalCalculado = dadosOrdenados.reduce((soma, registro) => {
+        const comissao = typeof registro.valorPorcentagem === 'number' ? registro.valorPorcentagem : 0;
+        return soma + comissao;
+      }, 0);
+      setTotalComissoes(totalCalculado);
+
+    } catch (err) {
+      setRegistros(registrosMock);
+      setRegistrosError(err);
+    } finally {
+      setLoadingRegistros(false);
+    }
+  }
+
+  // Função para buscar todos os registros (para outras views)
   async function fetchRegistros() {
     setLoadingRegistros(true);
     setRegistrosError(null);
@@ -160,13 +196,32 @@ function Home() {
   };
 
   useEffect(() => {
-    fetchRegistros();
+    // Inicializar com dados do mês atual para o dashboard
+    fetchRegistrosMesAtual();
     fetchUsuarios();
 
     const agora = new Date();
     const dataHoraAtual = formatarDataHoraParaInput(agora);
     setFormDataHora(dataHoraAtual);
+    
+    // Definir mês/ano atual para exibição
+    const mesAnoTexto = agora.toLocaleDateString('pt-BR', { 
+      month: 'long', 
+      year: 'numeric' 
+    });
+    setMesAnoAtual(mesAnoTexto);
   }, [registrosMock]);
+
+  // Effect para trocar entre dados do mês atual e todos os dados baseado na view
+  useEffect(() => {
+    if (activeView === 'inicio') {
+      // Na tela inicial, mostrar apenas dados do mês atual
+      fetchRegistrosMesAtual();
+    } else if (activeView === 'pesquisar') {
+      // Na tela de pesquisa, mostrar todos os dados
+      fetchRegistros();
+    }
+  }, [activeView]);
 
   // Effect para lidar com redirecionamento do treinamento
   useEffect(() => {
@@ -560,7 +615,12 @@ function Home() {
         ...toastConfig,
       });
 
-      await fetchRegistros();
+      // Atualizar dados baseado na view que vai ser ativada
+      if (activeView === 'inicio') {
+        await fetchRegistrosMesAtual();
+      } else {
+        await fetchRegistros();
+      }
       setActiveView('pesquisar');
       limparFormulario();
     } catch (error) {
@@ -640,7 +700,12 @@ function Home() {
       });
       setSelectedIds([]);
       setShowDeleteModal(false);
-      await fetchRegistros();
+      // Atualizar dados baseado na view ativa
+      if (activeView === 'inicio') {
+        await fetchRegistrosMesAtual();
+      } else {
+        await fetchRegistros();
+      }
     } catch (error) {
       toast.error('Erro ao excluir comissões. Tente novamente.', {
         ...toastConfig,
@@ -683,9 +748,9 @@ function Home() {
           <>
             <div id="summary-container">
               <div id="summary">
-                <p id="text-body">Total</p>
+                <p id="text-body">Total do Mês</p>
                 <h1 id="total">{totalComissoes?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</h1>
-                <p>{registros.length} registros no total</p>
+                <p>{registros.length} registros este mês</p>
               </div>
               <button id="card-button" onClick={() => setActiveView('comissoes')}>Comissões</button>
             </div>
@@ -698,7 +763,7 @@ function Home() {
             </div>
             <div id="prev-container">
               <div id="prev-comissoes">
-                <h1>Últimos registros</h1>
+                <h1>Últimas Comissões - {mesAnoAtual}</h1>
                 {loadingRegistros ? (
                   <div className="registros-loading">Carregando registros...</div>
                 ) : registrosError ? (

@@ -9,6 +9,7 @@ import Home from './components/Home/App.jsx';
 import Treinamento from './components/Treinamento/App.jsx';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import { SidebarProvider } from './contexts/SidebarContext.jsx';
 import AuthLayout from './components/AuthLayout/AuthLayout.jsx';
 
 // CSS
@@ -37,7 +38,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
-      <RouterProvider router={router} />
+      <SidebarProvider>
+        <RouterProvider router={router} />
+      </SidebarProvider>
     </AuthProvider>
   </StrictMode>,
 );

@@ -5,12 +5,11 @@ import logo from '../../images/logo.png';
 
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSidebar } from '../../contexts/SidebarContext';
 import { toast, ToastContainer } from 'react-toastify';
 
-import { FaSearch, FaEdit, FaTrashAlt } from "react-icons/fa";
-import { IoHomeSharp } from "react-icons/io5";
+import { FaSearch, FaEdit, FaTrashAlt, FaCalendarAlt, FaTimes, FaSort, FaInfoCircle } from "react-icons/fa";
 import { SiCashapp } from "react-icons/si";
-import { MdSchool } from "react-icons/md";
 import HamburgerButton from './HamburgerButton.jsx';
 import Sidebar from './Sidebar.jsx';
 
@@ -43,16 +42,7 @@ function Home() {
   const [searchDateFrom, setSearchDateFrom] = useState('');
   const [searchDateTo, setSearchDateTo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  useEffect(() => {
-    const body = document.body;
-    if (sidebarOpen) {
-      body.classList.add('no-scroll');
-    } else {
-      body.classList.remove('no-scroll');
-    }
-    return () => body.classList.remove('no-scroll');
-  }, [sidebarOpen]);
+  const { sidebarOpen, closeSidebar, toggleSidebar } = useSidebar();
   const [editingComissao, setEditingComissao] = useState(null);
 
   const [erros, setErros] = useState({
@@ -724,23 +714,16 @@ function Home() {
     <>
       <Sidebar 
         open={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
+        onClose={closeSidebar} 
         onNavigate={setActiveView} 
         currentPage={activeView}
       />
       <div id="container-menu" role="banner">
         <div className="menu-toggle-wrapper">
-          <HamburgerButton open={sidebarOpen} onClick={() => setSidebarOpen(v => !v)} />
+          <HamburgerButton open={sidebarOpen} onClick={toggleSidebar} />
         </div>
         <h1>Comissões BMS</h1>
         <img src={logo} alt="Logo Comissões BMS" />
-      </div>
-
-      <div id="pages" role="navigation" aria-label="Páginas">
-        <button onClick={() => setActiveView('inicio')} className={`btn-pages ${activeView === 'inicio' ? 'active' : ''}`}><i><IoHomeSharp /></i>Início</button>
-        <button onClick={() => setActiveView('comissoes')} id='btn-pg' className={`btn-pages ${activeView === 'comissoes' ? 'active' : ''}`}><i><SiCashapp /></i>Comissões</button>
-        <button onClick={() => navigate('/treinamento')} className={`btn-pages`}><i><MdSchool /></i>Treinamento</button>
-        <button onClick={() => setActiveView('pesquisar')} className={`btn-pages ${activeView === 'pesquisar' ? 'active' : ''}`}><i><FaSearch /></i>Pesquisar</button>
       </div>
 
       <main>
@@ -1023,69 +1006,175 @@ function Home() {
         {activeView === 'pesquisar' && (
           <div className="search-container">
             <div className="search-header">
-              <div className="search-controls">
-                <div className="search-input-wrapper">
-                  <FaSearch className="search-icon" />
-                  <input
-                    type="text"
-                    placeholder={`Pesquisar por ${searchType === 'todos' ? 'qualquer campo' : searchType}...`}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+              <h2 className="search-title">
+                <FaSearch className="title-icon" />
+                Pesquisar Comissões
+              </h2>
+              <p className="search-subtitle">
+                Encontre comissões usando filtros avançados de busca
+              </p>
+            </div>
 
-                <div className="date-search-wrapper">
-                  <div className="date-input-group">
-                    <label>De:</label>
-                    <input
-                      type="date"
-                      value={searchDateFrom}
-                      onChange={(e) => setSearchDateFrom(e.target.value)}
-                      className="date-input"
-                    />
-                  </div>
-                  <div className="date-input-group">
-                    <label>Até:</label>
-                    <input
-                      type="date"
-                      value={searchDateTo}
-                      onChange={(e) => setSearchDateTo(e.target.value)}
-                      className="date-input"
-                    />
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSearchDateFrom('');
-                      setSearchDateTo('');
-                    }}
-                    className="btn-clear-dates"
-                    title="Limpar datas"
-                  >
-                    Limpar
-                  </button>
+            <div className="search-filters">
+              {/* Filtro Principal de Busca */}
+              <div className="filter-section primary-search">
+                <div className="filter-header">
+                  <h3>Busca por Texto</h3>
                 </div>
-
-                <div className="filter-controls">
-                  <select
-                    value={searchType}
-                    onChange={(e) => setSearchType(e.target.value)}
-                    className="filter-select"
-                  >
-                    <option value="todos">Todos os campos</option>
-                    <option value="titulo">Título</option>
-                    <option value="usuario">Usuário</option>
-                    <option value="cnpj">CNPJ</option>
-                  </select>
-                  <select
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value)}
-                    className="filter-select"
-                  >
-                    <option value="desc">Mais recente</option>
-                    <option value="asc">Mais antigo</option>
-                  </select>
+                <div className="filter-content">
+                  <div className="search-input-container">
+                    <div className="search-input-wrapper">
+                      <FaSearch className="search-icon" />
+                      <input
+                        type="text"
+                        placeholder={`Digite ${searchType === 'todos' ? 'qualquer termo' : searchType.toLowerCase()}...`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.target.blur();
+                            if (searchTerm.trim()) {
+                              toast.info(`Resultados para "${searchTerm}": ${filteredRegistros.length} registro${filteredRegistros.length !== 1 ? 's' : ''} encontrado${filteredRegistros.length !== 1 ? 's' : ''}`);
+                            }
+                          }
+                        }}
+                        className="search-input"
+                      />
+                      <button 
+                        className="btn-search"
+                        title={searchTerm.trim() ? "Executar busca" : "Limpar busca"}
+                        onClick={() => {
+                          if (searchTerm.trim()) {
+                            toast.info(`Resultados para "${searchTerm}": ${filteredRegistros.length} registro${filteredRegistros.length !== 1 ? 's' : ''} encontrado${filteredRegistros.length !== 1 ? 's' : ''}`);
+                          } else {
+                            setSearchTerm('');
+                            setSearchDateFrom('');
+                            setSearchDateTo('');
+                            setSearchType('todos');
+                            setSortOrder('desc');
+                            toast.success('Filtros limpos!');
+                          }
+                        }}
+                      >
+                        {searchTerm.trim() ? 'Buscar' : 'Limpar Tudo'}
+                      </button>
+                    </div>
+                    <div className="search-type-wrapper">
+                      <label>Buscar em:</label>
+                      <select
+                        value={searchType}
+                        onChange={(e) => setSearchType(e.target.value)}
+                        className="search-type-select"
+                      >
+                        <option value="todos">Todos os campos</option>
+                        <option value="titulo">Título</option>
+                        <option value="usuario">Usuário</option>
+                        <option value="cnpj">CNPJ</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Filtro de Data */}
+              <div className="filter-section date-filter">
+                <div className="filter-header">
+                  <h3>
+                    <FaCalendarAlt className="filter-icon" />
+                    Filtro por Data
+                  </h3>
+                </div>
+                <div className="filter-content">
+                  <div className="date-range-container">
+                    <div className="date-input-group">
+                      <label>Data Inicial:</label>
+                      <input
+                        type="date"
+                        value={searchDateFrom}
+                        onChange={(e) => setSearchDateFrom(e.target.value)}
+                        className="date-input"
+                      />
+                    </div>
+                    <div className="date-separator">até</div>
+                    <div className="date-input-group">
+                      <label>Data Final:</label>
+                      <input
+                        type="date"
+                        value={searchDateTo}
+                        onChange={(e) => setSearchDateTo(e.target.value)}
+                        className="date-input"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSearchDateFrom('');
+                        setSearchDateTo('');
+                        toast.success('Datas limpa!');
+                      }}
+                      className="btn-clear-dates"
+                      title="Limpar filtro de datas"
+                    >
+                      <FaTimes />
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filtro de Ordenação */}
+              <div className="filter-section sort-filter">
+                <div className="filter-header">
+                  <h3>
+                    <FaSort className="filter-icon" />
+                    Ordenação
+                  </h3>
+                </div>
+                <div className="filter-content">
+                  <div className="sort-controls">
+                    <div className="sort-option">
+                      <label>Ordenar por:</label>
+                      <select
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value)}
+                        className="sort-select"
+                      >
+                        <option value="desc">Mais recente primeiro</option>
+                        <option value="asc">Mais antigo primeiro</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Status dos Resultados */}
+            <div className="search-results-info">
+              <div className="results-count">
+                <FaInfoCircle className="info-icon" />
+                <span>
+                  {filteredRegistros.length} resultado{filteredRegistros.length !== 1 ? 's' : ''} encontrado{filteredRegistros.length !== 1 ? 's' : ''}
+                  {searchTerm && ` para "${searchTerm}"`}
+                </span>
+              </div>
+              {(searchTerm || searchDateFrom || searchDateTo) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSearchDateFrom('');
+                    setSearchDateTo('');
+                    setSearchType('todos');
+                    setSortOrder('desc');
+                    toast.success('Todos os filtros foram limpos!');
+                  }}
+                  className="btn-clear-all"
+                >
+                  <FaTimes />
+                  Limpar todos os filtros
+                </button>
+              )}
+            </div>
+
+            <div className="results-section">
               <div className="action-buttons">
                 <button
                   onClick={handleSelectAll}

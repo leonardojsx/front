@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaChevronLeft, FaChevronRight, FaSearch } from "react-icons/fa";
-import { IoHomeSharp } from "react-icons/io5";
 import { SiCashapp } from "react-icons/si";
-import { MdSchool } from "react-icons/md";
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSidebar } from '../../contexts/SidebarContext';
 import HamburgerButton from '../Home/HamburgerButton.jsx';
 import Sidebar from '../Home/Sidebar.jsx';
 import logo from '../../images/logo.png';
@@ -27,7 +26,7 @@ function Treinamento() {
   const [usuarios, setUsuarios] = useState([]);
   const [showCommissionModal, setShowCommissionModal] = useState(false);
   const [currentTrainingData, setCurrentTrainingData] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { sidebarOpen, closeSidebar, toggleSidebar } = useSidebar();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [trainingToDelete, setTrainingToDelete] = useState(null);
 
@@ -147,16 +146,6 @@ function Treinamento() {
   useEffect(() => {
     fetchUsuarios();
   }, []);
-
-  useEffect(() => {
-    const body = document.body;
-    if (sidebarOpen) {
-      body.classList.add('no-scroll');
-    } else {
-      body.classList.remove('no-scroll');
-    }
-    return () => body.classList.remove('no-scroll');
-  }, [sidebarOpen]);
 
   // Modal functions
   const openTrainingModal = (date = null) => {
@@ -391,36 +380,25 @@ function Treinamento() {
   };
 
   const handleSidebarNavigation = (view) => {
-    if (view === 'treinamento') {
-      // Já estamos na página de treinamento, apenas fecha a sidebar
-      setSidebarOpen(false);
-    } else {
-      // Navega para a home com a view específica
-      navigate('/home', { state: { activeView: view } });
-    }
+    // Navega para a home com a view específica
+    // O sidebar será fechado com delay pela própria lógica do Sidebar
+    navigate('/home', { state: { activeView: view } });
   };
 
   return (
     <>
       <Sidebar 
         open={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
+        onClose={closeSidebar} 
         onNavigate={handleSidebarNavigation}
         currentPage="treinamento"
       />
       <div id="container-menu" role="banner">
         <div className="menu-toggle-wrapper">
-          <HamburgerButton open={sidebarOpen} onClick={() => setSidebarOpen(v => !v)} />
+          <HamburgerButton open={sidebarOpen} onClick={toggleSidebar} />
         </div>
         <h1>Comissões BMS</h1>
         <img src={logo} alt="Logo Comissões BMS" />
-      </div>
-
-      <div id="pages" role="navigation" aria-label="Páginas">
-        <button onClick={() => navigate('/home')} className="btn-pages"><i><IoHomeSharp /></i>Início</button>
-        <button onClick={() => navigate('/home', { state: { activeView: 'comissoes' } })} className="btn-pages"><i><SiCashapp /></i>Comissões</button>
-        <button className="btn-pages active"><i><MdSchool /></i>Treinamento</button>
-        <button onClick={() => navigate('/home', { state: { activeView: 'pesquisar' } })} className="btn-pages"><i><FaSearch /></i>Pesquisar</button>
       </div>
 
       <main>

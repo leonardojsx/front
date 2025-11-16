@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { FaSignOutAlt, FaUser } from 'react-icons/fa';
 
+// Constante para o tempo de animação do sidebar
+const SIDEBAR_ANIMATION_DURATION = 320;
+
 export default function Sidebar({ open, onClose, onNavigate, currentPage = null }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -15,21 +18,26 @@ export default function Sidebar({ open, onClose, onNavigate, currentPage = null 
     return () => window.removeEventListener('keydown', handleKey);
   }, [open, onClose]);
 
+  // Função utilitária para navegação com animação suave
+  const navigateWithDelay = (navigationFn) => {
+    onClose?.();
+    setTimeout(navigationFn, SIDEBAR_ANIMATION_DURATION);
+  };
+
   const handleTrainingClick = () => {
     if (currentPage === 'treinamento') {
       onClose?.();
     } else {
-      navigate('/treinamento');
-      onClose?.();
+      navigateWithDelay(() => navigate('/treinamento'));
     }
   };
 
   const handleNavigationClick = (view) => {
     if (currentPage === 'treinamento') {
-      // Se estamos na página de treinamento, usar a função de navegação customizada
-      onNavigate?.(view);
+      // Se estamos na página de treinamento, navegar com delay
+      navigateWithDelay(() => onNavigate?.(view));
     } else {
-      // Se estamos na Home, usar a navegação normal
+      // Se estamos na Home, usar navegação normal
       onNavigate?.(view);
       onClose?.();
     }

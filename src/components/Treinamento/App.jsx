@@ -326,13 +326,20 @@ function Treinamento() {
       return `${year}-${month}-${day}`;
     };
 
+    // Formatação de hora local para evitar problemas de timezone
+    const formatLocalTime = (date) => {
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    };
+
     setEditingTraining(training);
     setTrainingForm({
       titulo: training.titulo,
       cnpj: formatarCNPJ(training.cnpj),
       data: formatLocalDate(dataInicio),
-      horaInicio: dataInicio.toTimeString().slice(0, 5),
-      horaFim: dataFim.toTimeString().slice(0, 5),
+      horaInicio: formatLocalTime(dataInicio),
+      horaFim: formatLocalTime(dataFim),
       status: training.status,
       usuario_id: training.usuario_id || ''
     });

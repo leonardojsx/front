@@ -95,6 +95,14 @@ export default function Sidebar({ open, onClose, onNavigate, currentPage = null 
           >
             Pesquisar
           </button>
+          {user?.role === 'admin' && (
+            <button 
+              className={`sidebar-link ${currentPage === 'usuarios' ? 'active' : ''}`}
+              onClick={() => handleNavigationClick('usuarios')}
+            >
+              Usuários
+            </button>
+          )}
         </nav>
         
         <div className="sidebar-footer">

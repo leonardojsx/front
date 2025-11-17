@@ -1,0 +1,60 @@
+/* ===== OTIMIZAÇÕES DE PERFORMANCE ===== */
+
+/* Spinner mini para feedback de loading */
+.spinner-mini {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #ffffff;
+  animation: spin-mini 0.8s ease-in-out infinite;
+  margin-right: 6px;
+}
+
+@keyframes spin-mini {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Otimização do input de salário para resposta mais rápida */
+.salary-input {
+  transition: all 0.15s ease !important;
+}
+
+.salary-input:focus {
+  transform: none !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+}
+
+/* Botão de salvar otimizado */
+.btn-save-salary {
+  transition: all 0.15s ease !important;
+}
+
+.btn-save-salary:disabled {
+  opacity: 0.7 !important;
+  transform: none !important;
+}
+
+/* Feedback visual rápido para inputs */
+.salary-input,
+.btn-save-salary,
+.btn-cancel-salary {
+  will-change: transform, box-shadow, background-color;
+}
+
+/* Animação mais suave para toast notifications */
+.Toastify__toast {
+  animation-duration: 0.25s !important;
+}
+
+/* Otimização de renderização para listas */
+.users-list {
+  contain: layout style paint;
+}
+
+.user-item {
+  contain: layout paint;
+}

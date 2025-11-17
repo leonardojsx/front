@@ -1,6 +1,7 @@
-﻿import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
+﻿import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Index.css';
+import './Performance.css';
 import logo from '../../images/logo.png';
 
 import api from '../../services/api';
@@ -29,6 +30,24 @@ function Home() {
   const [selectedId, setSelectedId] = useState(null);
 
   const [activeView, setActiveView] = useState('inicio');
+  
+  // Função para trocar de view com reset de filtros para usuários sup
+  const handleViewChange = useCallback((newView) => {
+    const isNonAdmin = user && user.role !== 'admin';
+    
+    if (isNonAdmin && newView === 'comissoes') {
+      // Para usuários sup, sempre resetar filtros ao ir para comissões
+      setSearchTerm('');
+      setSearchDateFrom('');
+      setSearchDateTo('');
+      // Calcular total de comissões diretamente dos registros filtrados
+      setTimeout(() => {
+        fetchRegistros();
+      }, 100);
+    }
+    
+    setActiveView(newView);
+  }, [user]);
   const [formTitulo, setFormTitulo] = useState('');
   const [formValorVenda, setFormValorVenda] = useState('');
   const [formPorcentagem, setFormPorcentagem] = useState('');
@@ -44,6 +63,9 @@ function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sidebarOpen, closeSidebar, toggleSidebar } = useSidebar();
   const [editingComissao, setEditingComissao] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editingSalary, setEditingSalary] = useState('');
+  const [summaryData, setSummaryData] = useState([]);
 
   const [erros, setErros] = useState({
     titulo: '',
@@ -61,8 +83,26 @@ function Home() {
   const registrosMock = useMemo(() => ([
   ]), []);
 
-  // Função para buscar dados do mês atual (para dashboard)
-  async function fetchRegistrosMesAtual() {
+  // Cache para otimizar chamadas
+  const dashboardCacheRef = useRef({
+    data: null,
+    timestamp: 0,
+    cacheTime: 30000 // 30 segundos
+  });
+
+  // Função otimizada para buscar dados do mês atual (para dashboard)
+  const fetchRegistrosMesAtual = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    const cache = dashboardCacheRef.current;
+    
+    // Usar cache se disponível e não forçar refresh
+    if (!forceRefresh && cache.data && (now - cache.timestamp) < cache.cacheTime) {
+      setRegistros(cache.data.registros);
+      setTotalComissoes(cache.data.totalComissoes);
+      setLoadingRegistros(false);
+      return;
+    }
+
     setLoadingRegistros(true);
     setRegistrosError(null);
     try {
@@ -70,22 +110,67 @@ function Home() {
       const anoAtual = hoje.getFullYear();
       const mesAtual = hoje.getMonth() + 1;
 
-      const res = await api.get(`/schedule?ano=${anoAtual}&mes=${mesAtual}`);
-      const dadosApi = Array.isArray(res.data) && res.data.length > 0 ? res.data : registrosMock;
+      // Para usuários não-admin, buscar dados com summary para incluir salário
+      const isNonAdmin = user && user.role !== 'admin';
+      const params = isNonAdmin 
+        ? `?ano=${anoAtual}&mes=${mesAtual}&summary=true`
+        : `?ano=${anoAtual}&mes=${mesAtual}`;
 
-      const dadosOrdenados = dadosApi.sort((a, b) => {
-        const dataA = new Date(a.data || a.created_at || 0);
-        const dataB = new Date(b.data || b.created_at || 0);
-        return dataB - dataA;
-      });
+      const res = await api.get(`/schedule${params}`);
+      
+      if (isNonAdmin && res.data && typeof res.data === 'object' && res.data.items) {
+        // Dados com summary (inclui salário + comissões)
+        const dadosApi = Array.isArray(res.data.items) && res.data.items.length > 0 ? res.data.items : registrosMock;
+        
+        const dadosOrdenados = dadosApi.sort((a, b) => {
+          const dataA = new Date(a.data || a.created_at || 0);
+          const dataB = new Date(b.data || b.created_at || 0);
+          return dataB - dataA;
+        });
 
-      setRegistros(dadosOrdenados);
+        const totalFinalCalculado = res.data.totalFinal || 0;
+        
+        // Atualizar cache
+        dashboardCacheRef.current = {
+          data: {
+            registros: dadosOrdenados,
+            totalComissoes: totalFinalCalculado
+          },
+          timestamp: now,
+          cacheTime: cache.cacheTime
+        };
 
-      const totalCalculado = dadosOrdenados.reduce((soma, registro) => {
-        const comissao = typeof registro.valorPorcentagem === 'number' ? registro.valorPorcentagem : 0;
-        return soma + comissao;
-      }, 0);
-      setTotalComissoes(totalCalculado);
+        setRegistros(dadosOrdenados);
+        setTotalComissoes(totalFinalCalculado);
+        
+      } else {
+        // Dados normais apenas para admin (só comissões)
+        const dadosApi = Array.isArray(res.data) && res.data.length > 0 ? res.data : registrosMock;
+
+        const dadosOrdenados = dadosApi.sort((a, b) => {
+          const dataA = new Date(a.data || a.created_at || 0);
+          const dataB = new Date(b.data || b.created_at || 0);
+          return dataB - dataA;
+        });
+
+        const totalCalculado = dadosOrdenados.reduce((soma, registro) => {
+          const comissao = typeof registro.valorPorcentagem === 'number' ? registro.valorPorcentagem : 0;
+          return soma + comissao;
+        }, 0);
+
+        // Atualizar cache
+        dashboardCacheRef.current = {
+          data: {
+            registros: dadosOrdenados,
+            totalComissoes: totalCalculado
+          },
+          timestamp: now,
+          cacheTime: cache.cacheTime
+        };
+
+        setRegistros(dadosOrdenados);
+        setTotalComissoes(totalCalculado);
+      }
 
     } catch (err) {
       setRegistros(registrosMock);
@@ -93,29 +178,60 @@ function Home() {
     } finally {
       setLoadingRegistros(false);
     }
-  }
+  }, [user, registrosMock]);
 
   // Função para buscar todos os registros (para outras views)
+  // Função para buscar registros com filtro correto para usuários sup
   async function fetchRegistros() {
     setLoadingRegistros(true);
     setRegistrosError(null);
     try {
-      const res = await api.get('/schedule');
-      const dadosApi = Array.isArray(res.data) && res.data.length > 0 ? res.data : registrosMock;
+      const isNonAdmin = user && user.role !== 'admin';
+      
+      if (isNonAdmin) {
+        // Para usuários não-admin, buscar apenas do mês atual para manter consistência
+        const hoje = new Date();
+        const anoAtual = hoje.getFullYear();
+        const mesAtual = hoje.getMonth() + 1;
+        
 
-      const dadosOrdenados = dadosApi.sort((a, b) => {
-        const dataA = new Date(a.data || a.created_at || 0);
-        const dataB = new Date(b.data || b.created_at || 0);
-        return dataB - dataA;
-      });
+        const res = await api.get(`/schedule?ano=${anoAtual}&mes=${mesAtual}`);
+        const dadosApi = Array.isArray(res.data) && res.data.length > 0 ? res.data : registrosMock;
 
-      setRegistros(dadosOrdenados);
+        const dadosOrdenados = dadosApi.sort((a, b) => {
+          const dataA = new Date(a.data || a.created_at || 0);
+          const dataB = new Date(b.data || b.created_at || 0);
+          return dataB - dataA;
+        });
 
-      const totalCalculado = dadosOrdenados.reduce((soma, registro) => {
-        const comissao = typeof registro.valorPorcentagem === 'number' ? registro.valorPorcentagem : 0;
-        return soma + comissao;
-      }, 0);
-      setTotalComissoes(totalCalculado);
+        setRegistros(dadosOrdenados);
+
+        const totalCalculado = dadosOrdenados.reduce((soma, registro) => {
+          const comissao = typeof registro.valorPorcentagem === 'number' ? registro.valorPorcentagem : 0;
+          return soma + comissao;
+        }, 0);
+        setTotalComissoes(totalCalculado);
+        
+      } else {
+        // Para admin, buscar todos os registros
+
+        const res = await api.get('/schedule');
+        const dadosApi = Array.isArray(res.data) && res.data.length > 0 ? res.data : registrosMock;
+
+        const dadosOrdenados = dadosApi.sort((a, b) => {
+          const dataA = new Date(a.data || a.created_at || 0);
+          const dataB = new Date(b.data || b.created_at || 0);
+          return dataB - dataA;
+        });
+
+        setRegistros(dadosOrdenados);
+
+        const totalCalculado = dadosOrdenados.reduce((soma, registro) => {
+          const comissao = typeof registro.valorPorcentagem === 'number' ? registro.valorPorcentagem : 0;
+          return soma + comissao;
+        }, 0);
+        setTotalComissoes(totalCalculado);
+      }
 
     } catch (err) {
       setRegistros(registrosMock);
@@ -137,6 +253,117 @@ function Home() {
       });
     }
   }
+
+  // Função para buscar dados resumidos dos usuários com salários e comissões
+  // Debounce para fetchSummaryData
+  const fetchSummaryDataTimeoutRef = useRef(null);
+  
+  const fetchSummaryData = useCallback(async (immediate = false) => {
+    // Cancelar chamada anterior se existir
+    if (fetchSummaryDataTimeoutRef.current) {
+      clearTimeout(fetchSummaryDataTimeoutRef.current);
+    }
+
+    const executeFetch = async () => {
+      try {
+        const res = await api.get('/schedule/users-summary');
+        setSummaryData(res.data || []);
+      } catch (err) {
+        setSummaryData([]);
+        toast.warn('Não foi possível carregar o resumo dos usuários.', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
+    };
+
+    if (immediate) {
+      await executeFetch();
+    } else {
+      // Debounce de 300ms para evitar chamadas excessivas
+      fetchSummaryDataTimeoutRef.current = setTimeout(executeFetch, 300);
+    }
+  }, []);
+
+  // Função para atualizar salário do usuário
+  const handleUpdateSalary = async (userId, novoSalario) => {
+    try {
+      // Indicar que está salvando
+      setEditingUser(userId + '_saving');
+      
+      await api.put(`/users/${userId}`, { salarioBruto: novoSalario });
+      
+      // Atualizar dados localmente (otimístico) para resposta mais rápida
+      setSummaryData(prevData => 
+        prevData.map(userData => 
+          userData.id === userId 
+            ? { 
+                ...userData, 
+                salarioBruto: novoSalario,
+                totalFinal: Number((novoSalario + userData.totalComissoes).toFixed(2))
+              }
+            : userData
+        )
+      );
+      
+      toast.success('Salário atualizado!', {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      
+      // Limpar estados de edição
+      setEditingUser(null);
+      setEditingSalary('');
+      
+      // Invalidar cache do dashboard e atualizar dados em background
+      dashboardCacheRef.current.timestamp = 0; // Força refresh no próximo acesso
+      setTimeout(() => {
+        fetchSummaryData();
+        if (user && user.role !== 'admin') {
+          fetchRegistrosMesAtual(true); // Forçar refresh do dashboard
+        }
+      }, 200);
+      
+    } catch (error) {
+      const mensagemErro = error.response?.data?.message || error.message || 'Erro desconhecido';
+      toast.error(`Erro ao atualizar salário: ${mensagemErro}`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      
+      // Reverter otimização em caso de erro
+      fetchSummaryData();
+      setEditingUser(null);
+      setEditingSalary('');
+    }
+  };
+
+  // Função para formatar valor monetário
+  const formatarSalario = (valor) => {
+    const numero = valor.replace(/\D/g, '');
+    const numeroFormatado = (Number(numero) / 100).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2
+    });
+    return numeroFormatado;
+  };
+
+  const obterValorNumericoSalario = (valorFormatado) => {
+    return valorFormatado.replace(/[^\d]/g, '') / 100;
+  };
 
   // Função para formatar data/hora para datetime-local (considerando fuso horário local)
   const formatarDataHoraParaInput = (data) => {
@@ -210,6 +437,9 @@ function Home() {
     } else if (activeView === 'pesquisar') {
       // Na tela de pesquisa, mostrar todos os dados
       fetchRegistros();
+    } else if (activeView === 'usuarios') {
+      // Na tela de usuários, buscar dados resumidos
+      fetchSummaryData();
     }
   }, [activeView]);
 
@@ -219,7 +449,7 @@ function Home() {
       const { cnpj, titulo } = location.state.prefilledData;
       
       // Mudar para a view de comissões
-      setActiveView('comissoes');
+      handleViewChange('comissoes');
       
       // Pré-preencher os dados
       if (cnpj) {
@@ -234,8 +464,12 @@ function Home() {
       
       // Mostrar toast informativo
       toast.info('Dados do treinamento carregados no formulário de comissão!', {
-        ...toastConfig,
+        position: "top-right",
         autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
     } else if (location.state?.activeView) {
       // Navegar para a view específica vinda da página de treinamento
@@ -422,6 +656,14 @@ function Home() {
     return filtered;
   }, [registros, searchTerm, searchType, sortOrder, searchDateFrom, searchDateTo]);
 
+  // Calcular total de comissões baseado nos registros filtrados (não no estado totalComissoes)
+  const totalComissoesCalculado = useMemo(() => {
+    return filteredRegistros.reduce((soma, registro) => {
+      const comissao = typeof registro.valorPorcentagem === 'number' ? registro.valorPorcentagem : 0;
+      return soma + comissao;
+    }, 0);
+  }, [filteredRegistros]);
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredRegistros.slice(indexOfFirstItem, indexOfLastItem);
@@ -523,7 +765,7 @@ function Home() {
 
       setFormCnpj(formatarCNPJ(comissao.cnpj || ''));
       setEditingComissao(comissao);
-      setActiveView('comissoes');
+      handleViewChange('comissoes');
 
       toast.info('Dados carregados para edição!', {
         ...toastConfig,
@@ -715,7 +957,7 @@ function Home() {
       <Sidebar 
         open={sidebarOpen} 
         onClose={closeSidebar} 
-        onNavigate={setActiveView} 
+        onNavigate={handleViewChange} 
         currentPage={activeView}
       />
       <div id="container-menu" role="banner">
@@ -731,11 +973,13 @@ function Home() {
           <>
             <div id="summary-container">
               <div id="summary">
-                <p id="text-body">Total do Mês</p>
+                <p id="text-body">
+                  {user && user.role === 'admin' ? 'Total de Comissões' : 'Total do Mês (Salário + Comissões)'}
+                </p>
                 <h1 id="total">{totalComissoes?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</h1>
                 <p>{registros.length} registros este mês</p>
               </div>
-              <button id="card-button" onClick={() => setActiveView('comissoes')}>Comissões</button>
+              <button id="card-button" onClick={() => handleViewChange('comissoes')}>Comissões</button>
             </div>
             <div id="graphic-container">
               <div id="graphic">
@@ -940,7 +1184,7 @@ function Home() {
                   <SiCashapp />
                 </div>
                 <div className="stat-content">
-                  <h3>Total de Comissões</h3>
+                  <h3>Quantidade de Comissões</h3>
                   <p className="stat-value">{filteredRegistros.length}</p>
                 </div>
               </div>
@@ -950,8 +1194,35 @@ function Home() {
                   <SiCashapp />
                 </div>
                 <div className="stat-content">
+                  <h3>Total de Comissões</h3>
+                  <p className="stat-value">{totalComissoesCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                </div>
+              </div>
+              
+              <div className="stat-card">
+                <div className="stat-icon">
+                  <SiCashapp />
+                </div>
+                <div className="stat-content">
+                  <h3>Salário Base</h3>
+                  <p className="stat-value">
+                    {user?.salarioBruto ? 
+                      user.salarioBruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
+                      'R$ 0,00'
+                    }
+                  </p>
+                </div>
+              </div>
+              
+              <div className="stat-card">
+                <div className="stat-icon">
+                  <SiCashapp />
+                </div>
+                <div className="stat-content">
                   <h3>Valor Total</h3>
-                  <p className="stat-value">{totalComissoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className="stat-value">
+                    {(totalComissoesCalculado + (user?.salarioBruto || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1331,6 +1602,135 @@ function Home() {
                   >
                     »»
                   </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeView === 'usuarios' && user?.role === 'admin' && (
+          <div className="users-container">
+            <div className="users-header">
+              <h2 className="users-title">
+                <FaSearch className="title-icon" />
+                Gerenciar Usuários
+              </h2>
+              <p className="users-subtitle">
+                Visualize e gerencie salários e resumos de comissões dos usuários
+              </p>
+            </div>
+
+            <div className="users-summary">
+              {!summaryData || summaryData.length === 0 ? (
+                <div className="loading-state">
+                  <p>Carregando dados dos usuários...</p>
+                </div>
+              ) : (
+                <div className="users-grid">
+                  {Array.isArray(summaryData) && summaryData.map((userData) => (
+                    <div key={userData.id} className="user-card">
+                      <div className="user-card-header">
+                        <div className="user-info">
+                          <h3>{userData.nome}</h3>
+                          <p className="user-email">{userData.email}</p>
+                          <span className={`user-role ${userData.role}`}>
+                            {userData.role === 'admin' ? 'Administrador' : 'Supervisor'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="user-card-body">
+                        <div className="salary-section">
+                          <div className="salary-info">
+                            <label>Salário Bruto:</label>
+                            {editingUser === userData.id ? (
+                              <div className="salary-edit">
+                                <input
+                                  type="text"
+                                  value={editingSalary}
+                                  onChange={(e) => setEditingSalary(formatarSalario(e.target.value))}
+                                  placeholder="R$ 0,00"
+                                  className="salary-input"
+                                  autoFocus
+                                />
+                                <div className="salary-actions">
+                                  <button
+                                    onClick={() => {
+                                      const valorNumerico = obterValorNumericoSalario(editingSalary);
+                                      handleUpdateSalary(userData.id, valorNumerico);
+                                    }}
+                                    className="btn-save-salary"
+                                    disabled={!editingSalary || obterValorNumericoSalario(editingSalary) === 0 || editingUser === userData.id + '_saving'}
+                                  >
+                                    {editingUser === userData.id + '_saving' ? (
+                                      <>
+                                        <span className="spinner-mini"></span>
+                                        Salvando...
+                                      </>
+                                    ) : (
+                                      'Salvar'
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingUser(null);
+                                      setEditingSalary('');
+                                    }}
+                                    className="btn-cancel-salary"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="salary-display">
+                                <span className="salary-value">
+                                  {userData.salarioBruto ? 
+                                    userData.salarioBruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
+                                    'R$ 0,00'
+                                  }
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    setEditingUser(userData.id);
+                                    const valorAtual = userData.salarioBruto || 0;
+                                    const valorEmCentavos = valorAtual * 100;
+                                    setEditingSalary(formatarSalario(valorEmCentavos.toString()));
+                                  }}
+                                  className="btn-edit-salary"
+                                  title="Editar salário"
+                                >
+                                  <FaEdit />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="commission-summary">
+                          <div className="summary-item">
+                            <label>Comissões do Mês:</label>
+                            <span className="commission-value">
+                              {userData.totalComissoes ? 
+                                userData.totalComissoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
+                                'R$ 0,00'
+                              }
+                            </span>
+                          </div>
+                          
+                          <div className="summary-item total">
+                            <label>Total Geral (Salário + Comissões):</label>
+                            <span className="total-value">
+                              {userData.totalFinal ? 
+                                userData.totalFinal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
+                                (userData.salarioBruto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

@@ -1,7 +1,7 @@
 /* ==========================================================================
    1. IMPORTAÇÃO DE FONTES E REGRAS GLOBAIS
    ========================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap");
 
 /* ==========================================================================
    2. VARIÁVEIS CSS - ESQUEMA DE CORES MODERNO
@@ -47,9 +47,12 @@
 
   /* Sombras Modernas */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 
   /* Sombras Coloridas */
@@ -58,10 +61,26 @@
   --shadow-accent: 0 4px 14px 0 rgba(245, 158, 11, 0.2);
 
   /* Gradientes */
-  --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-  --gradient-secondary: linear-gradient(135deg, var(--secondary-color) 0%, var(--secondary-dark) 100%);
-  --gradient-accent: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-dark) 100%);
-  --gradient-glass: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  --gradient-primary: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-dark) 100%
+  );
+  --gradient-secondary: linear-gradient(
+    135deg,
+    var(--secondary-color) 0%,
+    var(--secondary-dark) 100%
+  );
+  --gradient-accent: linear-gradient(
+    135deg,
+    var(--accent-color) 0%,
+    var(--accent-dark) 100%
+  );
+  --gradient-glass: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
+  );
 
   /* Bordas */
   --border-radius-sm: 6px;
@@ -85,9 +104,14 @@
 /* BODY */
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--bg-secondary) 0%,
+    var(--bg-primary) 100%
+  );
   overflow-x: hidden;
-  font-family: 'Josefin Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: "Josefin Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
 }
 
 /* Previne overflow horizontal global */
@@ -112,7 +136,6 @@ body.no-scroll {
   touch-action: none;
 }
 
-
 /* ==========================================================================
    2. LAYOUT PRINCIPAL (HEADER, SIDEBAR, NAVEGAÇÃO)
    ========================================================================== */
@@ -135,16 +158,18 @@ body.no-scroll {
 
 /* Efeito de brilho no header */
 #container-menu::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.1) 50%,
-      transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
   animation: headerShimmer 4s ease-in-out infinite;
   z-index: 1;
 }
@@ -453,9 +478,6 @@ body.no-scroll {
   }
 }
 
-
-
-
 /* ==========================================================================
    3. COMPONENTES DE CONTEÚDO (CARDS, GRÁFICO, LISTAS)
    ========================================================================== */
@@ -464,15 +486,18 @@ body.no-scroll {
 #summary-container {
   height: 180px;
   border-radius: 24px;
-  background: #00C86F;
-  background: linear-gradient(347deg, rgba(0, 200, 111, 0.67) 0%, rgba(42, 109, 184, 0.93) 37%, rgba(68, 71, 126, 0.95) 92%);
+  background: #00c86f;
+  background: linear-gradient(
+    347deg,
+    rgba(0, 200, 111, 0.67) 0%,
+    rgba(42, 109, 184, 0.93) 37%,
+    rgba(68, 71, 126, 0.95) 92%
+  );
   position: relative;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow:
-    0 20px 40px rgba(102, 126, 234, 0.25),
-    0 8px 16px rgba(118, 75, 162, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 20px 40px rgba(102, 126, 234, 0.25),
+    0 8px 16px rgba(118, 75, 162, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   overflow: hidden;
   margin: 0px 8px;
@@ -481,16 +506,18 @@ body.no-scroll {
 
 /* Efeito shimmer sutil */
 #summary-container::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -50%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.08) 50%,
-      transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
   border-radius: 24px;
   animation: shimmer 4s ease-in-out infinite;
   z-index: 1;
@@ -512,10 +539,8 @@ body.no-scroll {
 
 #summary-container:hover {
   transform: translateY(-4px) scale(1.01);
-  box-shadow:
-    0 20px 40px rgba(102, 126, 234, 0.35),
-    0 12px 20px rgba(118, 75, 162, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: 0 20px 40px rgba(102, 126, 234, 0.35),
+    0 12px 20px rgba(118, 75, 162, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
@@ -539,19 +564,23 @@ body.no-scroll {
 
 /* Elemento decorativo no summary */
 #summary::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 20px;
   right: 20px;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 #summary::after {
-  content: '💰';
+  content: "💰";
   position: absolute;
   top: 35px;
   right: 35px;
@@ -570,14 +599,18 @@ body.no-scroll {
 }
 
 #text-body::before {
-  content: '';
+  content: "";
   position: absolute;
   left: -8px;
   top: 50%;
   transform: translateY(-50%);
   width: 4px;
   height: 16px;
-  background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.6) 100%);
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.6) 100%
+  );
   border-radius: 2px;
 }
 
@@ -587,7 +620,11 @@ body.no-scroll {
   color: #ffffff;
   margin: 12px 0 8px 0;
   text-shadow: 0px 0px 9px rgba(0, 0, 0, 0.204);
-  background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.9) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -606,7 +643,11 @@ body.no-scroll {
   transform: translate(-50%, 140%);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(248, 250, 252, 0.9) 100%
+  );
   backdrop-filter: blur(20px);
   color: #1e293b;
   font-size: 13px;
@@ -618,9 +659,7 @@ body.no-scroll {
   opacity: 0;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   z-index: 1;
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.2),
-    0 4px 8px rgba(0, 0, 0, 0.1),
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
@@ -630,11 +669,13 @@ body.no-scroll {
 }
 
 #card-button:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(240, 245, 251, 0.95) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(240, 245, 251, 0.95) 100%
+  );
   transform: translate(-50%, 60%) translateY(-2px) scale(1.02);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.25),
-    0 4px 8px rgba(0, 0, 0, 0.15),
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), 0 4px 8px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
@@ -672,9 +713,7 @@ body.no-scroll {
   border: none;
   padding: 24px 20px;
   border-radius: 24px;
-  box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.08),
-    0 8px 24px rgba(0, 0, 0, 0.06),
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
   background: linear-gradient(145deg, #ffffff 0%, #fafbff 50%, #f8fafc 100%);
   display: flex;
@@ -705,7 +744,12 @@ body.no-scroll {
   left: 0;
   right: 0;
   height: 60px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(248, 250, 252, 0.7) 40%, rgba(248, 250, 252, 0.95) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(248, 250, 252, 0.7) 40%,
+    rgba(248, 250, 252, 0.95) 100%
+  );
   pointer-events: none;
   z-index: 1;
   border-radius: 0 0 24px 24px;
@@ -745,9 +789,7 @@ body.no-scroll {
   min-width: 0;
   cursor: pointer;
   background: linear-gradient(145deg, #ffffff 0%, #fafbff 100%);
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.02),
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
   border-radius: 18px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -771,10 +813,8 @@ body.no-scroll {
 
 .registro:hover {
   background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 4px 16px rgba(99, 102, 241, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(99, 102, 241, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   transform: translateY(-2px);
   border-color: rgba(99, 102, 241, 0.2);
 }
@@ -791,10 +831,8 @@ body.no-scroll {
 .registro.selected {
   background: linear-gradient(145deg, #eef2ff 0%, #e0e7ff 100%);
   border-color: #6366f1;
-  box-shadow:
-    0 6px 24px rgba(99, 102, 241, 0.15),
-    0 2px 12px rgba(99, 102, 241, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.15),
+    0 2px 12px rgba(99, 102, 241, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .registro.selected::before {
@@ -854,7 +892,7 @@ body.no-scroll {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-family: "JetBrains Mono", "Consolas", monospace;
   letter-spacing: 0.3px;
   min-width: 0;
 }
@@ -897,7 +935,6 @@ body.no-scroll {
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
 }
 
-
 /* ==========================================================================
    4. COMPONENTES REUTILIZÁVEIS (BOTÕES)
    ========================================================================== */
@@ -919,7 +956,12 @@ body.no-scroll {
 
   #prev-comissoes::after {
     height: 50px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(248, 250, 252, 0.7) 40%, rgba(248, 250, 252, 0.95) 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(248, 250, 252, 0.7) 40%,
+      rgba(248, 250, 252, 0.95) 100%
+    );
     border-radius: 0 0 20px 20px;
   }
 
@@ -979,7 +1021,12 @@ body.no-scroll {
 
   #prev-comissoes::after {
     height: 45px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(248, 250, 252, 0.7) 35%, rgba(248, 250, 252, 0.95) 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(248, 250, 252, 0.7) 35%,
+      rgba(248, 250, 252, 0.95) 100%
+    );
     border-radius: 0 0 18px 18px;
   }
 
@@ -1037,8 +1084,6 @@ body.no-scroll {
     min-width: 70px;
     text-align: center;
   }
-
-
 }
 
 @media (max-width: 360px) {
@@ -1056,7 +1101,12 @@ body.no-scroll {
 
   #prev-comissoes::after {
     height: 40px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(248, 250, 252, 0.7) 30%, rgba(248, 250, 252, 0.95) 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(248, 250, 252, 0.7) 30%,
+      rgba(248, 250, 252, 0.95) 100%
+    );
     border-radius: 0 0 16px 16px;
   }
 
@@ -1108,13 +1158,9 @@ body.no-scroll {
     border-radius: 6px;
     min-width: 60px;
   }
-
-
 }
 
 @media (max-width: 320px) {
-
-
 }
 
 @media (min-width: 600px) {
@@ -1145,9 +1191,6 @@ body.no-scroll {
     transform: translateY(0);
   }
 }
-
-
-
 
 /* ----- Formulário de Cadastro ----- */
 .form-container {
@@ -1326,11 +1369,11 @@ body.no-scroll {
     line-height: 1.2;
     padding: 0 10px;
   }
-  
+
   .title-icon {
     font-size: 20px;
   }
-  
+
   .search-subtitle {
     font-size: 14px;
     text-align: center;
@@ -1346,11 +1389,11 @@ body.no-scroll {
     letter-spacing: 0.3px;
     padding: 0 8px;
   }
-  
+
   .title-icon {
     font-size: 18px;
   }
-  
+
   .search-subtitle {
     font-size: 13px;
     padding: 0 12px;
@@ -1387,7 +1430,11 @@ body.no-scroll {
 }
 
 .filter-header {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-dark) 100%
+  );
   padding: 12px 16px;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -1469,7 +1516,11 @@ body.no-scroll {
 
 .btn-search {
   padding: 14px 20px;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-dark) 100%
+  );
   color: #ffffff;
   border: 2px solid var(--primary-color);
   font-size: 14px;
@@ -1809,7 +1860,6 @@ body.no-scroll {
   border-color: #e74c3c;
 }
 
-
 /* Tabela de Pesquisa - Layout Estável */
 .comissoes-table {
   width: 100%;
@@ -1897,7 +1947,11 @@ body.no-scroll {
 
 /* Preenchimento fixo para estabilizar altura */
 .table-filler {
-  background: linear-gradient(180deg, rgba(248, 249, 250, 0.15) 0%, rgba(248, 249, 250, 0.05) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(248, 249, 250, 0.15) 0%,
+    rgba(248, 249, 250, 0.05) 100%
+  );
   border-top: 1px solid #f8f8f8;
   display: flex;
   align-items: center;
@@ -1963,8 +2017,6 @@ body.no-scroll {
 /* Removido - sem indicador numérico */
 
 /* Removido animação da bolinha */
-
-
 
 /* Animações */
 @keyframes selectPulse {
@@ -2052,8 +2104,6 @@ body.no-scroll {
   box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
 }
 
-
-
 /* Melhorar estilos dos botões principais */
 .btn-edit {
   transition: all 0.2s ease;
@@ -2069,7 +2119,7 @@ body.no-scroll {
 }
 
 .btn-edit:disabled::after {
-  content: '🚫';
+  content: "🚫";
   position: absolute;
   right: -8px;
   top: -8px;
@@ -2078,7 +2128,6 @@ body.no-scroll {
 }
 
 @keyframes disabledBlink {
-
   0%,
   50% {
     opacity: 1;
@@ -2140,8 +2189,6 @@ body.no-scroll {
     flex-direction: column;
     gap: 10px;
   }
-
-
 
   .btn-clear {
     align-self: center;
@@ -2263,7 +2310,6 @@ body.no-scroll {
   font-weight: bold;
   white-space: nowrap;
 }
-
 
 /* ==========================================================================
    8. ESTILOS PARA PAGINAÇÃO MELHORADA
@@ -2488,7 +2534,7 @@ body.no-scroll {
 .Toastify__toast {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  font-family: 'Josefin Sans', sans-serif;
+  font-family: "Josefin Sans", sans-serif;
   font-size: 14px;
 }
 
@@ -3706,8 +3752,15 @@ body.no-scroll {
   }
 
   .commission-value {
-    text-align: left;
+    text-align: right;
     width: 100%;
+  }
+
+  @media (max-width: 480px) {
+    .commission-value {
+      text-align: left;
+      width: 100%;
+    }
   }
 
   .role-info {
@@ -3721,16 +3774,16 @@ body.no-scroll {
   .search-input-wrapper {
     min-width: 200px;
   }
-  
+
   .search-input-wrapper .search-icon {
     left: 14px;
     font-size: 15px;
   }
-  
+
   .search-input {
     padding-left: 44px;
   }
-  
+
   .search-input-wrapper .btn-search {
     padding: 10px 12px;
     font-size: 13px;
@@ -3744,7 +3797,7 @@ body.no-scroll {
     gap: 8px;
     overflow: visible;
   }
-  
+
   .search-input-wrapper .search-icon {
     position: absolute;
     left: 12px;
@@ -3754,7 +3807,7 @@ body.no-scroll {
     font-size: 14px;
     z-index: 3;
   }
-  
+
   .search-input-wrapper .btn-search {
     padding: 10px 16px;
     font-size: 12px;
@@ -3762,7 +3815,7 @@ body.no-scroll {
     border-radius: 6px;
     border: 2px solid var(--primary-color);
   }
-  
+
   .search-input {
     border-radius: 6px;
     border: 2px solid #e2e8f0 !important;
@@ -3776,28 +3829,28 @@ body.no-scroll {
     top: 12px;
     font-size: 13px;
   }
-  
+
   .search-input {
     padding-left: 32px !important;
     font-size: 14px;
   }
-  
+
   .search-input-wrapper .btn-search {
     padding: 8px 12px;
     font-size: 11px;
     min-width: 80px;
   }
-  
+
   .search-title {
     font-size: 18px;
     gap: 4px;
     letter-spacing: 0.2px;
   }
-  
+
   .title-icon {
     font-size: 16px;
   }
-  
+
   .search-subtitle {
     font-size: 12px;
   }
@@ -4054,28 +4107,28 @@ body.no-scroll {
   .users-container {
     padding: 15px;
   }
-  
+
   .users-grid {
     grid-template-columns: 1fr;
     gap: 15px;
   }
-  
+
   .user-card-header {
     padding: 15px;
   }
-  
+
   .user-card-body {
     padding: 15px;
   }
-  
+
   .users-title {
     font-size: 1.5rem;
   }
-  
+
   .salary-actions {
     flex-direction: column;
   }
-  
+
   .btn-save-salary,
   .btn-cancel-salary {
     padding: 10px;
@@ -4086,21 +4139,21 @@ body.no-scroll {
   .users-container {
     padding: 10px;
   }
-  
+
   .users-grid {
     gap: 12px;
   }
-  
+
   .user-info h3 {
     font-size: 1.1rem;
   }
-  
+
   .summary-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
-  
+
   .salary-display {
     flex-direction: column;
     align-items: flex-start;
@@ -4347,33 +4400,101 @@ body.no-scroll {
   font-size: 1.1rem;
 }
 
+/* Estilos para o campo de descontos */
+.discount-info {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  gap: 12px;
+}
+
+/* Estilo específico para descontos do mês no resumo */
+.monthly-discount-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .monthly-discount-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+}
+
+.discount-value {
+  font-weight: 600;
+  color: #dc3545;
+  font-size: 1rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-manage-discount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.25);
+  min-width: 120px;
+  justify-content: center;
+}
+
+.btn-manage-discount:hover {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.btn-manage-discount svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Mobile responsiveness for user management */
 @media (max-width: 768px) {
   .users-container {
     padding: 15px;
   }
-  
+
   .users-grid {
     grid-template-columns: 1fr;
     gap: 15px;
   }
-  
+
   .user-card-header {
     padding: 15px;
   }
-  
+
   .user-card-body {
     padding: 15px;
   }
-  
+
   .users-title {
     font-size: 1.5rem;
   }
-  
+
   .salary-actions {
     flex-direction: column;
   }
-  
+
   .btn-save-salary,
   .btn-cancel-salary {
     padding: 10px;
@@ -4384,21 +4505,21 @@ body.no-scroll {
   .users-container {
     padding: 10px;
   }
-  
+
   .users-grid {
     gap: 12px;
   }
-  
+
   .user-info h3 {
     font-size: 1.1rem;
   }
-  
+
   .summary-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
-  
+
   .salary-display {
     flex-direction: column;
     align-items: flex-start;

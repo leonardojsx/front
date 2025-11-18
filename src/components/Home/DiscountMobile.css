@@ -1,0 +1,90 @@
+/* Estilos adicionais para melhorar campos de desconto em mobile */
+@media (max-width: 768px) {
+  .discount-info {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    justify-content: space-between !important;
+  }
+  
+  .discount-value {
+    text-align: left !important;
+  }
+  
+  .btn-manage-discount {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    padding: 8px 0 !important;
+  }
+  
+  .discount-info {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+  
+  .discount-value {
+    text-align: left !important;
+    font-size: 1.1rem !important;
+    order: 1;
+  }
+  
+  .btn-manage-discount {
+    align-self: flex-start !important;
+    padding: 10px 16px !important;
+    font-size: 0.9rem !important;
+    order: 2;
+    margin-top: 4px;
+  }
+  
+  .commission-value {
+    font-size: 1.1rem !important;
+  }
+  
+  .total-value {
+    font-size: 1.2rem !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .summary-item {
+    gap: 6px !important;
+    padding: 6px 0 !important;
+  }
+  
+  .summary-item label {
+    font-size: 0.85rem !important;
+    margin-bottom: 4px !important;
+  }
+  
+  .discount-info {
+    gap: 8px !important;
+  }
+  
+  .discount-value {
+    font-size: 1rem !important;
+  }
+  
+  .btn-manage-discount {
+    padding: 8px 12px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .commission-value {
+    font-size: 1rem !important;
+  }
+  
+  .total-value {
+    font-size: 1.1rem !important;
+  }
+}

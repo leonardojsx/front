@@ -96,11 +96,22 @@ export default function Sidebar({ open, onClose, onNavigate, currentPage = null 
             Pesquisar
           </button>
           {user?.role === 'admin' && (
+            <>
+              <button 
+                className={`sidebar-link ${currentPage === 'usuarios' ? 'active' : ''}`}
+                onClick={() => handleNavigationClick('usuarios')}
+              >
+                Usuários
+              </button>
+
+            </>
+          )}
+          {user?.role === 'sup' && (
             <button 
-              className={`sidebar-link ${currentPage === 'usuarios' ? 'active' : ''}`}
-              onClick={() => handleNavigationClick('usuarios')}
+              className={`sidebar-link ${currentPage === 'descontos' ? 'active' : ''}`}
+              onClick={() => handleNavigationClick('descontos')}
             >
-              Usuários
+              Minhas Deduções
             </button>
           )}
         </nav>

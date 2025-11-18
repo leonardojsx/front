@@ -2,6 +2,11 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Index.css';
 import './Performance.css';
+import './Discounts.css';
+import './ModernDeductions.css';
+import './HighlightCard.css';
+import './DiscountMobile.css';
+import './LargeScreenUsers.css';
 import logo from '../../images/logo.png';
 
 import api from '../../services/api';
@@ -67,13 +72,29 @@ function Home() {
   const [editingSalary, setEditingSalary] = useState('');
   const [summaryData, setSummaryData] = useState([]);
 
+  // Estados para descontos
+  const [descontos, setDescontos] = useState([]);
+  const [descontosDoUsuario, setDescontosDoUsuario] = useState([]);
+  const [loadingDescontos, setLoadingDescontos] = useState(false);
+  const [formDescricaoDesconto, setFormDescricaoDesconto] = useState('');
+  const [formValorDesconto, setFormValorDesconto] = useState('');
+  const [formUsuarioDesconto, setFormUsuarioDesconto] = useState('');
+  const [editingDesconto, setEditingDesconto] = useState(null);
+  const [showDescontoModal, setShowDescontoModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUserName, setSelectedUserName] = useState('');
+  const [activeDiscountTab, setActiveDiscountTab] = useState('novo');
+
   const [erros, setErros] = useState({
     titulo: '',
     valorVenda: '',
     porcentagem: '',
     usuario: '',
     dataHora: '',
-    cnpj: ''
+    cnpj: '',
+    descricaoDesconto: '',
+    valorDesconto: '',
+    usuarioDesconto: ''
   });
   const [selectedIds, setSelectedIds] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -365,6 +386,179 @@ function Home() {
     return valorFormatado.replace(/[^\d]/g, '') / 100;
   };
 
+  // FUNÇÕES PARA DESCONTOS
+  const fetchDescontos = async () => {
+    setLoadingDescontos(true);
+    try {
+      const res = await api.get('/discount');
+      setDescontos(res.data || []);
+    } catch (error) {
+      toast.error('Erro ao carregar descontos');
+    } finally {
+      setLoadingDescontos(false);
+    }
+  };
+
+  const handleDescontoSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validações
+    if (!formDescricaoDesconto.trim()) {
+      setErros(prev => ({ ...prev, descricaoDesconto: '📝 Descrição é obrigatória' }));
+      return;
+    }
+    if (!formValorDesconto || obterValorNumerico(formValorDesconto) <= 0) {
+      setErros(prev => ({ ...prev, valorDesconto: '💰 Valor deve ser maior que zero' }));
+      return;
+    }
+    if (!selectedUserId && !formUsuarioDesconto) {
+      toast.error('👤 Usuário não foi selecionado', {
+        style: {
+          background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+          color: 'white'
+        }
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const descontoData = {
+        descricao: formDescricaoDesconto,
+        valor: obterValorNumerico(formValorDesconto),
+        idUsuario: selectedUserId || formUsuarioDesconto || user.id
+      };
+
+      if (editingDesconto) {
+        await api.put(`/discount/${editingDesconto.id}`, descontoData);
+        toast.success('✅ Desconto atualizado com sucesso!', {
+          icon: '✏️',
+          style: {
+            background: 'linear-gradient(135deg, #10b981, #059669)',
+            color: 'white'
+          }
+        });
+      } else {
+        await api.post('/discount', descontoData);
+        toast.success('✅ Desconto cadastrado com sucesso!', {
+          icon: '💾',
+          style: {
+            background: 'linear-gradient(135deg, #10b981, #059669)',
+            color: 'white'
+          }
+        });
+      }
+
+      // Limpar formulário
+      setFormDescricaoDesconto('');
+      setFormValorDesconto('');
+      setFormUsuarioDesconto('');
+      setEditingDesconto(null);
+      setActiveDiscountTab('lista');
+      setErros(prev => ({ ...prev, descricaoDesconto: '', valorDesconto: '', usuarioDesconto: '' }));
+      
+      // Recarregar lista de descontos do usuário
+      if (selectedUserId) {
+        await fetchDescontosDoUsuario(selectedUserId);
+      }
+      
+      // Recarregar dados dependendo da tela atual
+      if (activeView === 'descontos') {
+        fetchDescontos();
+      } else if (activeView === 'usuarios') {
+        fetchSummaryData();
+      }
+    } catch (error) {
+      const mensagemErro = error.response?.data?.message || 'Erro ao salvar desconto';
+      toast.error(`❌ ${mensagemErro}`, {
+        style: {
+          background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+          color: 'white'
+        }
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditDesconto = (desconto) => {
+    setEditingDesconto(desconto);
+    setFormDescricaoDesconto(desconto.descricao);
+    setFormValorDesconto(formatarMoeda(desconto.valor.toString()));
+    if (user?.role === 'admin') {
+      setFormUsuarioDesconto(desconto.idUsuario);
+    }
+    setShowDescontoModal(true);
+  };
+
+  const handleDeleteDesconto = async (id) => {
+    if (!window.confirm('🗑️ Tem certeza que deseja remover este desconto?')) return;
+    
+    try {
+      await api.delete(`/discount/${id}`);
+      toast.success('✅ Desconto removido com sucesso!', { 
+        icon: '🗑️',
+        style: {
+          background: 'linear-gradient(135deg, #10b981, #059669)',
+          color: 'white'
+        }
+      });
+      
+      // Recarregar lista de descontos do usuário
+      if (selectedUserId) {
+        await fetchDescontosDoUsuario(selectedUserId);
+      }
+      
+      // Recarregar dados dependendo da tela atual
+      if (activeView === 'descontos') {
+        fetchDescontos();
+      } else if (activeView === 'usuarios') {
+        fetchSummaryData();
+      }
+    } catch (error) {
+      toast.error('❌ Erro ao remover desconto', {
+        style: {
+          background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+          color: 'white'
+        }
+      });
+    }
+  };
+
+  // Função para buscar descontos de um usuário específico
+  const fetchDescontosDoUsuario = async (userId) => {
+    console.log('🔍 Buscando descontos para usuário:', userId);
+    
+    if (!userId) {
+      console.log('❌ UserId não fornecido, definindo array vazio');
+      setDescontosDoUsuario([]);
+      return;
+    }
+    
+    setLoadingDescontos(true);
+    try {
+      console.log('📡 Fazendo requisição para:', `/discount/user/${userId}`);
+      const res = await api.get(`/discount/user/${userId}`);
+      console.log('✅ Resposta recebida:', res.data);
+      
+      const descontosData = Array.isArray(res.data) ? res.data : [];
+      console.log('📋 Descontos processados:', descontosData);
+      
+      setDescontosDoUsuario(descontosData);
+    } catch (error) {
+      console.error('❌ Erro ao carregar descontos do usuário:', error);
+      setDescontosDoUsuario([]);
+      toast.error('🚫 Erro ao carregar descontos do usuário', {
+        style: {
+          background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+          color: 'white'
+        }
+      });
+    } finally {
+      setLoadingDescontos(false);
+    }
+  };
+
   // Função para formatar data/hora para datetime-local (considerando fuso horário local)
   const formatarDataHoraParaInput = (data) => {
     if (!data) return '';
@@ -440,8 +634,36 @@ function Home() {
     } else if (activeView === 'usuarios') {
       // Na tela de usuários, buscar dados resumidos
       fetchSummaryData();
+    } else if (activeView === 'descontos' && user?.role === 'sup') {
+      // Na tela de descontos (apenas para sup), buscar descontos do próprio usuário
+      if (user?.id) {
+        fetchDescontosDoUsuario(user.id);
+      }
     }
   }, [activeView]);
+
+  // Effect para sincronizar descontosDoUsuario com descontos na tela de deduções para usuário sup
+  useEffect(() => {
+    if (activeView === 'descontos' && user?.role === 'sup' && descontosDoUsuario.length >= 0) {
+      setDescontos(descontosDoUsuario);
+    }
+  }, [descontosDoUsuario, activeView, user?.role]);
+
+  // Effect para limpar e recarregar descontos quando trocar de usuário
+  useEffect(() => {
+    console.log('🔄 Mudança detectada - selectedUserId:', selectedUserId);
+    if (selectedUserId) {
+      // Limpar dados anteriores
+      setDescontosDoUsuario([]);
+      setLoadingDescontos(true);
+      
+      // Buscar novos dados
+      fetchDescontosDoUsuario(selectedUserId);
+    } else {
+      // Se não há usuário selecionado, limpar dados
+      setDescontosDoUsuario([]);
+    }
+  }, [selectedUserId]);
 
   // Effect para lidar com redirecionamento do treinamento
   useEffect(() => {
@@ -974,10 +1196,24 @@ function Home() {
             <div id="summary-container">
               <div id="summary">
                 <p id="text-body">
-                  {user && user.role === 'admin' ? 'Total de Comissões' : 'Total do Mês (Salário + Comissões)'}
+                  {user && user.role === 'admin' ? 'Total de Comissões' : 'Salário Líquido do Mês'}
                 </p>
-                <h1 id="total">{totalComissoes?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</h1>
-                <p>{registros.length} registros este mês</p>
+                <h1 id="total">
+                  {(() => {
+                    if (user && user.role === 'admin') {
+                      return totalComissoes?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    } else {
+                      const salarioBruto = user?.salarioBruto || 0;
+                      const comissoes = totalComissoesCalculado || 0;
+                      const totalDescontos = descontos?.reduce((total, d) => total + d.valor, 0) || 0;
+                      const salarioLiquido = salarioBruto + comissoes - totalDescontos;
+                      return salarioLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    }
+                  })()}
+                </h1>
+                <p>
+                  {registros.length} registros
+                </p>
               </div>
               <button id="card-button" onClick={() => handleViewChange('comissoes')}>Comissões</button>
             </div>
@@ -1219,9 +1455,21 @@ function Home() {
                   <SiCashapp />
                 </div>
                 <div className="stat-content">
-                  <h3>Valor Total</h3>
+                  <h3>Total Descontos</h3>
                   <p className="stat-value">
-                    {(totalComissoesCalculado + (user?.salarioBruto || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {(descontos?.reduce((total, d) => total + d.valor, 0) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
+                </div>
+              </div>
+
+              <div className="stat-card highlight-card">
+                <div className="stat-icon">
+                  <SiCashapp />
+                </div>
+                <div className="stat-content">
+                  <h3>Salário Líquido Total</h3>
+                  <p className="stat-value highlight-value">
+                    {(totalComissoesCalculado + (user?.salarioBruto || 0) - (descontos?.reduce((total, d) => total + d.valor, 0) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </p>
                 </div>
               </div>
@@ -1717,9 +1965,37 @@ function Home() {
                               }
                             </span>
                           </div>
+
+                          <div className="summary-item">
+                            <label>Descontos do Mês:</label>
+                            <div className="monthly-discount-info">
+                              <span className="discount-value">
+                                {userData.totalDescontos ? 
+                                  userData.totalDescontos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
+                                  'R$ 0,00'
+                                }
+                              </span>
+                              <button
+                                onClick={() => {
+                                  setSelectedUserId(userData.id);
+                                  setSelectedUserName(userData.nome);
+                                  setFormUsuarioDesconto(userData.id);
+                                  setEditingDesconto(null);
+                                  setFormDescricaoDesconto('');
+                                  setFormValorDesconto('');
+                                  setShowDescontoModal(true);
+                                }}
+                                className="btn-manage-discount"
+                                title="Gerenciar descontos"
+                              >
+                                <SiCashapp />
+                                Gerenciar
+                              </button>
+                            </div>
+                          </div>
                           
                           <div className="summary-item total">
-                            <label>Total Geral (Salário + Comissões):</label>
+                            <label>Salário Líquido:</label>
                             <span className="total-value">
                               {userData.totalFinal ? 
                                 userData.totalFinal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
@@ -1736,7 +2012,427 @@ function Home() {
             </div>
           </div>
         )}
+
+        {activeView === 'descontos' && user?.role === 'sup' && (
+          <div className="modern-deductions-container">
+            {/* Header Moderno */}
+            <div className="modern-header">
+              <div className="header-content">
+                <div className="header-title">
+                  <div className="title-icon-container">
+                    💸
+                  </div>
+                  <div>
+                    <h1 className="main-title">Minhas Deduções Salariais</h1>
+                    <p className="subtitle">Acompanhe todas as deduções aplicadas ao seu salário</p>
+                  </div>
+                </div>
+                <div className="header-decoration">
+                  <div className="decoration-circle circle-1"></div>
+                  <div className="decoration-circle circle-2"></div>
+                  <div className="decoration-circle circle-3"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Cards de Resumo */}
+            <div className="salary-summary-grid">
+              {/* Salário Bruto */}
+              <div className="summary-card salary-card">
+                <div className="card-header">
+                  <div className="card-icon salary-icon">💰</div>
+                  <h3>Salário Bruto</h3>
+                </div>
+                <div className="card-value salary-value">
+                  {user?.salarioBruto ? 
+                    user.salarioBruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
+                    'R$ 0,00'
+                  }
+                </div>
+                <div className="card-subtitle">Base mensal</div>
+              </div>
+
+              {/* Total de Comissões */}
+              <div className="summary-card commission-card">
+                <div className="card-header">
+                  <div className="card-icon commission-icon">🎆</div>
+                  <h3>Comissões</h3>
+                </div>
+                <div className="card-value commission-value">
+                  {summaryData?.totalComissoes ? 
+                    summaryData.totalComissoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
+                    'R$ 0,00'
+                  }
+                </div>
+                <div className="card-subtitle">Total este mês</div>
+              </div>
+
+              {/* Total de Deduções */}
+              <div className="summary-card deduction-card">
+                <div className="card-header">
+                  <div className="card-icon deduction-icon">📉</div>
+                  <h3>Deduções</h3>
+                </div>
+                <div className="card-value deduction-value">
+                  {descontos.length > 0 ? 
+                    descontos.reduce((total, d) => total + d.valor, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) :
+                    'R$ 0,00'
+                  }
+                </div>
+                <div className="card-subtitle">{descontos.length} deduções</div>
+              </div>
+
+              {/* Salário Líquido */}
+              <div className="summary-card net-salary-card">
+                <div className="card-header">
+                  <div className="card-icon net-salary-icon">🌟</div>
+                  <h3>Salário Líquido</h3>
+                </div>
+                <div className="card-value net-salary-value">
+                  {(() => {
+                    const salarioBruto = user?.salarioBruto || 0;
+                    const totalComissoes = summaryData?.totalComissoes || 0;
+                    const totalDescontos = descontos.reduce((total, d) => total + d.valor, 0);
+                    const salarioLiquido = salarioBruto + totalComissoes - totalDescontos;
+                    return salarioLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                  })()}
+                </div>
+                <div className="card-subtitle">Valor final</div>
+              </div>
+            </div>
+
+            {/* Lista de Deduções Moderna */}
+            <div className="modern-deductions-list">
+              <div className="list-header">
+                <h2>📋 Detalhamento das Deduções</h2>
+                <div className="list-stats">
+                  {descontos.length} {descontos.length === 1 ? 'dedução' : 'deduções'} encontrada{descontos.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+
+              {loadingDescontos ? (
+                <div className="modern-loading-state">
+                  <div className="loading-spinner-modern"></div>
+                  <h3>Carregando deduções...</h3>
+                  <p>Aguarde enquanto buscamos suas informações</p>
+                </div>
+              ) : descontos.length === 0 ? (
+                <div className="modern-empty-state">
+                  <div className="empty-illustration">
+                    <div className="empty-icon-large">🎉</div>
+                    <div className="empty-sparkles">
+                      <span className="sparkle sparkle-1">✨</span>
+                      <span className="sparkle sparkle-2">✨</span>
+                      <span className="sparkle sparkle-3">✨</span>
+                    </div>
+                  </div>
+                  <h3>Nenhuma dedução encontrada!</h3>
+                  <p>Parabéns! Você não possui deduções em seu salário neste momento.</p>
+                  <div className="empty-action">
+                    <button className="btn-celebrate" onClick={() => {
+                      toast.success('🎉 Que ótimo! Seu salário está livre de deduções!', {
+                        style: {
+                          background: 'linear-gradient(135deg, #10b981, #059669)',
+                          color: 'white'
+                        }
+                      });
+                    }}>
+                      🎆 Comemorar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="deductions-grid">
+                  {descontos.map((desconto, index) => (
+                    <div key={desconto.id} className="deduction-card" style={{animationDelay: `${index * 0.1}s`}}>
+                      <div className="deduction-header">
+                        <div className="deduction-type">
+                          <div className="type-icon">💸</div>
+                          <div className="type-info">
+                            <h4>{desconto.descricao}</h4>
+                            <span className="deduction-category">Dedução Salarial</span>
+                          </div>
+                        </div>
+                        <div className="deduction-amount">
+                          <span className="amount-value">
+                            {desconto.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="deduction-footer">
+                        <div className="deduction-date">
+                          <div className="date-icon">📅</div>
+                          <span>
+                            {new Intl.DateTimeFormat('pt-BR', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }).format(new Date(desconto.data))}
+                          </span>
+                        </div>
+                        <div className="deduction-status">
+                          <span className="status-badge active">✓ Aplicado</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Rodapé com Informações Adicionais */}
+            {descontos.length > 0 && (
+              <div className="deductions-footer">
+                <div className="footer-info">
+                  <div className="info-item">
+                    <strong>📈 Média por dedução:</strong>
+                    <span>
+                      {(descontos.reduce((total, d) => total + d.valor, 0) / descontos.length).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                  <div className="info-item">
+                    <strong>📅 Última atualização:</strong>
+                    <span>
+                      {descontos.length > 0 ? 
+                        new Intl.DateTimeFormat('pt-BR', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        }).format(new Date(Math.max(...descontos.map(d => new Date(d.data))))) :
+                        'N/A'
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </main>
+
+      {/* Modal de Desconto Moderno com Tabs */}
+      {showDescontoModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>
+                Gerenciar Descontos
+                {selectedUserName && ` - ${selectedUserName}`}
+              </h3>
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setShowDescontoModal(false);
+                  setEditingDesconto(null);
+                  setFormDescricaoDesconto('');
+                  setFormValorDesconto('');
+                  setFormUsuarioDesconto('');
+                  setErros(prev => ({ ...prev, descricaoDesconto: '', valorDesconto: '', usuarioDesconto: '' }));
+                }}
+                aria-label="Fechar modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Sistema de Tabs */}
+            <div className="discount-tabs">
+              <button
+                className={`tab-button ${activeDiscountTab === 'novo' ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveDiscountTab('novo');
+                  setEditingDesconto(null);
+                  setFormDescricaoDesconto('');
+                  setFormValorDesconto('');
+                }}
+              >
+                ➕ Novo Desconto
+              </button>
+              <button
+                className={`tab-button ${activeDiscountTab === 'lista' ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveDiscountTab('lista');
+                  if (selectedUserId) {
+                    fetchDescontosDoUsuario(selectedUserId);
+                  }
+                }}
+              >
+                📋 Descontos Cadastrados
+              </button>
+            </div>
+
+            <div className="tab-content">
+              {/* Tab: Novo/Editar Desconto */}
+              {activeDiscountTab === 'novo' && (
+                <form onSubmit={handleDescontoSubmit}>
+                  {selectedUserName && (
+                    <div className="form-group">
+                      <div className="selected-user-info">
+                        <span>👤 {selectedUserName}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label htmlFor="descricaoDesconto" data-icon="📝">
+                      Descrição do Desconto *
+                    </label>
+                    <input
+                      type="text"
+                      id="descricaoDesconto"
+                      value={formDescricaoDesconto}
+                      onChange={(e) => {
+                        setFormDescricaoDesconto(e.target.value);
+                        setErros(prev => ({ ...prev, descricaoDesconto: '' }));
+                      }}
+                      className={`form-control ${erros.descricaoDesconto ? 'error' : ''}`}
+                      placeholder="Ex: INSS, Vale Transporte, Plano de Saúde..."
+                      disabled={isSubmitting}
+                    />
+                    {erros.descricaoDesconto && (
+                      <span className="error-message">{erros.descricaoDesconto}</span>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="valorDesconto" data-icon="💰">
+                      Valor do Desconto *
+                    </label>
+                    <input
+                      type="text"
+                      id="valorDesconto"
+                      value={formValorDesconto}
+                      onChange={(e) => {
+                        const valorFormatado = formatarMoeda(e.target.value);
+                        setFormValorDesconto(valorFormatado);
+                        setErros(prev => ({ ...prev, valorDesconto: '' }));
+                      }}
+                      className={`form-control ${erros.valorDesconto ? 'error' : ''}`}
+                      placeholder="R$ 0,00"
+                      disabled={isSubmitting}
+                    />
+                    {erros.valorDesconto && (
+                      <span className="error-message">{erros.valorDesconto}</span>
+                    )}
+                  </div>
+
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => {
+                        setShowDescontoModal(false);
+                        setEditingDesconto(null);
+                        setFormDescricaoDesconto('');
+                        setFormValorDesconto('');
+                        setFormUsuarioDesconto('');
+                        setSelectedUserId(null);
+                        setSelectedUserName('');
+                        setErros(prev => ({ ...prev, descricaoDesconto: '', valorDesconto: '', usuarioDesconto: '' }));
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      🚫 Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? '⏳ Salvando...' : (editingDesconto ? '✏️ Atualizar' : '💾 Cadastrar')}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Tab: Lista de Descontos */}
+              {activeDiscountTab === 'lista' && (
+                <div>
+                  {loadingDescontos ? (
+                    <div className="loading-state">
+                      <div className="loading-spinner"></div>
+                      <p>Carregando descontos...</p>
+                    </div>
+                  ) : !Array.isArray(descontosDoUsuario) || descontosDoUsuario.length === 0 ? (
+                    <div className="empty-state">
+                      <div className="empty-icon">📭</div>
+                      <h3>Nenhum desconto encontrado</h3>
+                      <p>Este usuário ainda não possui descontos cadastrados.</p>
+                    </div>
+                  ) : (
+                    <div className="discounts-list-container">
+                      {Array.isArray(descontosDoUsuario) && descontosDoUsuario.map((desconto) => (
+                        <div key={desconto.id} className="discount-item">
+                          <div className="discount-header">
+                            <div className="discount-info">
+                              <h4>{desconto.descricao}</h4>
+                              <div className="discount-value">
+                                {desconto.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </div>
+                            </div>
+                            <div className="discount-actions">
+                              <button
+                                className="btn-edit-discount"
+                                onClick={() => {
+                                  setEditingDesconto(desconto);
+                                  setFormDescricaoDesconto(desconto.descricao);
+                                  setFormValorDesconto(desconto.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+                                  setActiveDiscountTab('novo');
+                                }}
+                                title="Editar desconto"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                className="btn-delete-discount"
+                                onClick={() => handleDeleteDesconto(desconto.id)}
+                                title="Excluir desconto"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                          <div className="discount-meta">
+                            <div className="discount-user">
+                              {selectedUserName}
+                            </div>
+                            <div className="discount-date">
+                              {new Intl.DateTimeFormat('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }).format(new Date(desconto.data))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Resumo Total */}
+                      <div className="discount-item" style={{background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', borderColor: '#f87171'}}>
+                        <div className="discount-header">
+                          <div className="discount-info">
+                            <h4 style={{color: '#dc2626'}}>💯 Total de Descontos</h4>
+                            <div className="discount-value" style={{fontSize: '28px'}}>
+                              {Array.isArray(descontosDoUsuario) ? 
+                                descontosDoUsuario.reduce((total, d) => total + (d.valor || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) :
+                                'R$ 0,00'
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Confirmação de Exclusão */}
       {showDeleteModal && (

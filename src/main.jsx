@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { SidebarProvider } from './contexts/SidebarContext.jsx';
 import AuthLayout from './components/AuthLayout/AuthLayout.jsx';
+import { ToastContainer } from 'react-toastify';
 
 // CSS
 import './global.css';
@@ -40,6 +41,7 @@ createRoot(document.getElementById('root')).render(
     <AuthProvider>
       <SidebarProvider>
         <RouterProvider router={router} />
+        <ToastContainer/>
       </SidebarProvider>
     </AuthProvider>
   </StrictMode>,

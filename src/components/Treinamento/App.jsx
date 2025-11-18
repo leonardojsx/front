@@ -485,7 +485,7 @@ function Treinamento() {
               <h3>{editingTraining ? 'Editar Treinamento' : 'Novo Treinamento'}</h3>
               <button onClick={closeTrainingModal} className="modal-close">×</button>
             </div>
-            <form onSubmit={handleTrainingSubmit} className="modal-body">
+            <form className="modal-body">
               <div className="form-field">
                 <label htmlFor="training-titulo">Título *</label>
                 <input

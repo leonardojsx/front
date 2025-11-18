@@ -315,31 +315,25 @@ function Treinamento() {
   };
 
   const editTraining = (training) => {
-    const dataInicio = new Date(training.data_inicio);
-    const dataFim = new Date(training.data_fim);
-
-    // Formatação de data local para evitar problemas de timezone
-    const formatLocalDate = (date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+    // Usar strings de data diretamente do backend para evitar problemas de timezone
+    const formatDateFromISO = (isoString) => {
+      // Extrair apenas a parte da data (YYYY-MM-DD)
+      return isoString.split('T')[0];
     };
 
-    // Formatação de hora local para evitar problemas de timezone
-    const formatLocalTime = (date) => {
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      return `${hours}:${minutes}`;
+    const formatTimeFromISO = (isoString) => {
+      // Extrair apenas a parte do tempo (HH:MM)
+      const timePart = isoString.split('T')[1];
+      return timePart ? timePart.substring(0, 5) : '00:00';
     };
 
     setEditingTraining(training);
     setTrainingForm({
       titulo: training.titulo,
       cnpj: formatarCNPJ(training.cnpj),
-      data: formatLocalDate(dataInicio),
-      horaInicio: formatLocalTime(dataInicio),
-      horaFim: formatLocalTime(dataFim),
+      data: formatDateFromISO(training.data_inicio),
+      horaInicio: formatTimeFromISO(training.data_inicio),
+      horaFim: formatTimeFromISO(training.data_fim),
       status: training.status,
       usuario_id: training.usuario_id || ''
     });

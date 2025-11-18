@@ -1,26 +1,39 @@
 /* ==========================================================================
    DESTAQUE PARA CARD DE SALÁRIO LÍQUIDO TOTAL
    ========================================================================== */
-.highlight-card {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border: 2px solid #34d399;
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
-  transform: scale(1.02);
+.stat-card.highlight-card {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: 2px solid #34d399 !important;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3) !important;
+  transform: scale(1.02) !important;
 }
 
-.highlight-card .stat-icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+.stat-card.highlight-card:hover {
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.4) !important;
+  transform: scale(1.03) translateY(-2px) !important;
 }
 
-.highlight-card .stat-content h3 {
-  color: #ffffff;
-  font-weight: 600;
+.stat-card.highlight-card .stat-icon {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
 }
 
+.stat-card.highlight-card .stat-content h3 {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.stat-card.highlight-card .stat-content .highlight-value {
+  color: #ffffff !important;
+  font-size: 1.4rem !important;
+  font-weight: 700 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Garante que o valor destacado tenha o estilo correto */
 .highlight-value {
   color: #ffffff !important;
   font-size: 1.4rem !important;
   font-weight: 700 !important;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }

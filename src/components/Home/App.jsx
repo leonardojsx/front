@@ -4,9 +4,9 @@ import './Index.css';
 import './Performance.css';
 import './Discounts.css';
 import './ModernDeductions.css';
-import './HighlightCard.css';
 import './DiscountMobile.css';
 import './LargeScreenUsers.css';
+import './HighlightCard.css';
 import logo from '../../images/logo.png';
 
 import api from '../../services/api';
@@ -71,6 +71,7 @@ function Home() {
   const [editingUser, setEditingUser] = useState(null);
   const [editingSalary, setEditingSalary] = useState('');
   const [summaryData, setSummaryData] = useState([]);
+  const [userSummaryData, setUserSummaryData] = useState(null); // Para dados do usuário logado (sup)
 
   // Estados para descontos
   const [descontos, setDescontos] = useState([]);
@@ -163,6 +164,16 @@ function Home() {
 
         setRegistros(dadosOrdenados);
         setTotalComissoes(totalFinalCalculado);
+        
+        // Para usuários sup, salvar dados individuais para uso na tela de deduções
+        if (user && user.role === 'sup') {
+          setUserSummaryData({
+            totalComissoes: res.data.totalComissoes || 0,
+            salarioBruto: res.data.salarioBruto || 0,
+            totalDescontos: res.data.totalDescontos || 0,
+            totalFinal: res.data.totalFinal || 0
+          });
+        }
         
       } else {
         // Dados normais apenas para admin (só comissões)
@@ -628,6 +639,10 @@ function Home() {
     if (activeView === 'inicio') {
       // Na tela inicial, mostrar apenas dados do mês atual
       fetchRegistrosMesAtual();
+      // Para usuários sup, carregar também os descontos para exibir no salário líquido
+      if (user?.role === 'sup' && user?.id) {
+        fetchDescontosDoUsuario(user.id);
+      }
     } else if (activeView === 'pesquisar') {
       // Na tela de pesquisa, mostrar todos os dados
       fetchRegistros();
@@ -638,13 +653,17 @@ function Home() {
       // Na tela de descontos (apenas para sup), buscar descontos do próprio usuário
       if (user?.id) {
         fetchDescontosDoUsuario(user.id);
+        // Se não temos dados de comissão do usuário, buscar
+        if (!userSummaryData) {
+          fetchRegistrosMesAtual();
+        }
       }
     }
   }, [activeView]);
 
-  // Effect para sincronizar descontosDoUsuario com descontos na tela de deduções para usuário sup
+  // Effect para sincronizar descontosDoUsuario com descontos para usuário sup (tela inicial e deduções)
   useEffect(() => {
-    if (activeView === 'descontos' && user?.role === 'sup' && descontosDoUsuario.length >= 0) {
+    if ((activeView === 'descontos' || activeView === 'inicio') && user?.role === 'sup' && descontosDoUsuario.length >= 0) {
       setDescontos(descontosDoUsuario);
     }
   }, [descontosDoUsuario, activeView, user?.role]);
@@ -2059,8 +2078,8 @@ function Home() {
                   <h3>Comissões</h3>
                 </div>
                 <div className="card-value commission-value">
-                  {summaryData?.totalComissoes ? 
-                    summaryData.totalComissoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
+                  {userSummaryData?.totalComissoes ? 
+                    userSummaryData.totalComissoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
                     'R$ 0,00'
                   }
                 </div>
@@ -2090,8 +2109,8 @@ function Home() {
                 </div>
                 <div className="card-value net-salary-value">
                   {(() => {
-                    const salarioBruto = user?.salarioBruto || 0;
-                    const totalComissoes = summaryData?.totalComissoes || 0;
+                    const salarioBruto = userSummaryData?.salarioBruto || user?.salarioBruto || 0;
+                    const totalComissoes = userSummaryData?.totalComissoes || 0;
                     const totalDescontos = descontos.reduce((total, d) => total + d.valor, 0);
                     const salarioLiquido = salarioBruto + totalComissoes - totalDescontos;
                     return salarioLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -2270,7 +2289,7 @@ function Home() {
                   {selectedUserName && (
                     <div className="form-group">
                       <div className="selected-user-info">
-                        <span>👤 {selectedUserName}</span>
+                        <span>{selectedUserName}</span>
                       </div>
                     </div>
                   )}

@@ -1484,7 +1484,7 @@ function Home() {
                   <SiCashapp />
                 </div>
                 <div className="stat-content">
-                  <h3>Salário Base</h3>
+                  <h3>Salário Comercial</h3>
                   <p className="stat-value">
                     {(() => {
                       if (!user?.salarioBruto) return 'R$ 0,00';
@@ -1939,7 +1939,7 @@ function Home() {
                       <div className="user-card-body">
                         <div className="salary-section">
                           <div className="salary-info">
-                            <label>Salário Bruto:</label>
+                            <label>Salário Comercial:</label>
                             {editingUser === userData.id ? (
                               <div className="salary-edit">
                                 <input
@@ -2109,11 +2109,11 @@ function Home() {
 
             {/* Cards de Resumo */}
             <div className="salary-summary-grid">
-              {/* Salário Bruto */}
+              {/* Salário Comercial */}
               <div className="summary-card salary-card">
                 <div className="card-header">
                   <div className="card-icon salary-icon">💰</div>
-                  <h3>Salário Bruto</h3>
+                  <h3>Salário Comercial</h3>
                 </div>
                 <div className="card-value salary-value">
                   {(() => {
@@ -2123,7 +2123,7 @@ function Home() {
                   })()}
                 </div>
                 <div className="card-subtitle">
-                  {user?.nivel ? `Com nível ${user.nivel} (+${user.porcentagem_aumento || 0}%)` : 'Base mensal'}
+                  {user?.nivel ? `Com nível ${user.nivel} (+${user.porcentagem_aumento || 0}%)` : 'Valor mensal'}
                 </div>
               </div>
 

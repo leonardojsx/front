@@ -399,6 +399,18 @@ body.no-scroll {
   letter-spacing: 0.5px;
 }
 
+.user-nivel {
+  font-size: 11px;
+  color: var(--primary-color);
+  font-weight: 600;
+  background: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-top: 2px;
+}
+
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -3929,7 +3941,7 @@ body.no-scroll {
 
 .user-role {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 4px 2px;
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 500;
@@ -4234,7 +4246,7 @@ body.no-scroll {
 
 .user-role {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 4px 2px;
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 500;

@@ -7,6 +7,7 @@ import './ModernDeductions.css';
 import './DiscountMobile.css';
 import './LargeScreenUsers.css';
 import './HighlightCard.css';
+import './Niveis.css';
 import logo from '../../images/logo.png';
 
 import api from '../../services/api';
@@ -70,6 +71,7 @@ function Home() {
   const [editingComissao, setEditingComissao] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
   const [editingSalary, setEditingSalary] = useState('');
+  const [editingNivel, setEditingNivel] = useState('');
   const [summaryData, setSummaryData] = useState([]);
   const [userSummaryData, setUserSummaryData] = useState(null); // Para dados do usuário logado (sup)
 
@@ -99,8 +101,26 @@ function Home() {
   });
   const [selectedIds, setSelectedIds] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteDescontoModal, setShowDeleteDescontoModal] = useState(false);
+  const [descontoToDelete, setDescontoToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Níveis de suporte e suas porcentagens de aumento
+  const niveisSupoerte = {
+    '01': { nome: 'Júnior', porcentagem: 0 },
+    '02': { nome: 'Pleno', porcentagem: 7 },
+    '03': { nome: 'Sênior', porcentagem: 15 },
+    '04': { nome: 'Tech Lead', porcentagem: 25 },
+    '05': { nome: 'Premium', porcentagem: 30 }
+  };
+
+  // Função para calcular salário com aumento por nível
+  const calcularSalarioComNivel = (salarioBruto, nivel) => {
+    if (!nivel || !niveisSupoerte[nivel]) return salarioBruto;
+    const porcentagem = niveisSupoerte[nivel].porcentagem;
+    return salarioBruto * (1 + porcentagem / 100);
+  };
 
   const registrosMock = useMemo(() => ([
   ]), []);
@@ -321,13 +341,19 @@ function Home() {
     }
   }, []);
 
-  // Função para atualizar salário do usuário
-  const handleUpdateSalary = async (userId, novoSalario) => {
+  // Função para atualizar salário e nível do usuário
+  const handleUpdateSalary = async (userId, novoSalario, nivel = null) => {
     try {
       // Indicar que está salvando
       setEditingUser(userId + '_saving');
       
-      await api.put(`/users/${userId}`, { salarioBruto: novoSalario });
+      const updateData = { salarioBruto: novoSalario };
+      if (nivel !== null && nivel !== '') {
+        updateData.nivel = nivel;
+        updateData.porcentagem_aumento = niveisSupoerte[nivel]?.porcentagem || 0;
+      }
+      
+      await api.put(`/users/${userId}`, updateData);
       
       // Atualizar dados localmente (otimístico) para resposta mais rápida
       setSummaryData(prevData => 
@@ -336,7 +362,9 @@ function Home() {
             ? { 
                 ...userData, 
                 salarioBruto: novoSalario,
-                totalFinal: Number((novoSalario + userData.totalComissoes).toFixed(2))
+                nivel: nivel || userData.nivel,
+                porcentagem_aumento: nivel ? niveisSupoerte[nivel]?.porcentagem || 0 : userData.porcentagem_aumento,
+                totalFinal: Number((calcularSalarioComNivel(novoSalario, nivel || userData.nivel) + userData.totalComissoes).toFixed(2))
               }
             : userData
         )
@@ -354,6 +382,7 @@ function Home() {
       // Limpar estados de edição
       setEditingUser(null);
       setEditingSalary('');
+      setEditingNivel('');
       
       // Invalidar cache do dashboard e atualizar dados em background
       dashboardCacheRef.current.timestamp = 0; // Força refresh no próximo acesso
@@ -502,18 +531,17 @@ function Home() {
     setShowDescontoModal(true);
   };
 
-  const handleDeleteDesconto = async (id) => {
-    if (!window.confirm('🗑️ Tem certeza que deseja remover este desconto?')) return;
+  const handleDeleteDesconto = (desconto) => {
+    setDescontoToDelete(desconto);
+    setShowDeleteDescontoModal(true);
+  };
+
+  const confirmarExclusaoDesconto = async () => {
+    if (!descontoToDelete) return;
     
     try {
-      await api.delete(`/discount/${id}`);
-      toast.success('✅ Desconto removido com sucesso!', { 
-        icon: '🗑️',
-        style: {
-          background: 'linear-gradient(135deg, #10b981, #059669)',
-          color: 'white'
-        }
-      });
+      await api.delete(`/discount/${descontoToDelete.id}`);
+      toast.success('Desconto removido com sucesso!');
       
       // Recarregar lista de descontos do usuário
       if (selectedUserId) {
@@ -526,45 +554,42 @@ function Home() {
       } else if (activeView === 'usuarios') {
         fetchSummaryData();
       }
+
+      // Fechar modal e limpar dados
+      setShowDeleteDescontoModal(false);
+      setDescontoToDelete(null);
     } catch (error) {
-      toast.error('❌ Erro ao remover desconto', {
-        style: {
-          background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-          color: 'white'
-        }
-      });
+      toast.error('Erro ao remover desconto');
     }
+  };
+
+  const cancelarExclusaoDesconto = () => {
+    setShowDeleteDescontoModal(false);
+    setDescontoToDelete(null);
   };
 
   // Função para buscar descontos de um usuário específico
   const fetchDescontosDoUsuario = async (userId) => {
-    console.log('🔍 Buscando descontos para usuário:', userId);
-    
     if (!userId) {
-      console.log('❌ UserId não fornecido, definindo array vazio');
       setDescontosDoUsuario([]);
       return;
     }
     
     setLoadingDescontos(true);
     try {
-      console.log('📡 Fazendo requisição para:', `/discount/user/${userId}`);
-      const res = await api.get(`/discount/user/${userId}`);
-      console.log('✅ Resposta recebida:', res.data);
+      // Obter ano e mês atuais para filtrar descontos
+      const hoje = new Date();
+      const anoAtual = hoje.getFullYear();
+      const mesAtual = hoje.getMonth() + 1;
+      
+      const res = await api.get(`/discount/user/${userId}?ano=${anoAtual}&mes=${mesAtual}`);
       
       const descontosData = Array.isArray(res.data) ? res.data : [];
-      console.log('📋 Descontos processados:', descontosData);
       
       setDescontosDoUsuario(descontosData);
     } catch (error) {
-      console.error('❌ Erro ao carregar descontos do usuário:', error);
       setDescontosDoUsuario([]);
-      toast.error('🚫 Erro ao carregar descontos do usuário', {
-        style: {
-          background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-          color: 'white'
-        }
-      });
+      toast.error('Erro ao carregar descontos do usuário');
     } finally {
       setLoadingDescontos(false);
     }
@@ -649,8 +674,8 @@ function Home() {
     } else if (activeView === 'usuarios') {
       // Na tela de usuários, buscar dados resumidos
       fetchSummaryData();
-    } else if (activeView === 'descontos' && user?.role === 'sup') {
-      // Na tela de descontos (apenas para sup), buscar descontos do próprio usuário
+    } else if ((activeView === 'descontos' || activeView === 'comissoes') && user?.role === 'sup') {
+      // Na tela de descontos ou comissões (apenas para sup), buscar descontos do próprio usuário
       if (user?.id) {
         fetchDescontosDoUsuario(user.id);
         // Se não temos dados de comissão do usuário, buscar
@@ -661,16 +686,15 @@ function Home() {
     }
   }, [activeView]);
 
-  // Effect para sincronizar descontosDoUsuario com descontos para usuário sup (tela inicial e deduções)
+  // Effect para sincronizar descontosDoUsuario com descontos para usuário sup (tela inicial, deduções e comissões)
   useEffect(() => {
-    if ((activeView === 'descontos' || activeView === 'inicio') && user?.role === 'sup' && descontosDoUsuario.length >= 0) {
+    if ((activeView === 'descontos' || activeView === 'inicio' || activeView === 'comissoes') && user?.role === 'sup' && descontosDoUsuario.length >= 0) {
       setDescontos(descontosDoUsuario);
     }
   }, [descontosDoUsuario, activeView, user?.role]);
 
   // Effect para limpar e recarregar descontos quando trocar de usuário
   useEffect(() => {
-    console.log('🔄 Mudança detectada - selectedUserId:', selectedUserId);
     if (selectedUserId) {
       // Limpar dados anteriores
       setDescontosDoUsuario([]);
@@ -1223,9 +1247,10 @@ function Home() {
                       return totalComissoes?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     } else {
                       const salarioBruto = user?.salarioBruto || 0;
+                      const salarioComNivel = calcularSalarioComNivel(salarioBruto, user?.nivel);
                       const comissoes = totalComissoesCalculado || 0;
                       const totalDescontos = descontos?.reduce((total, d) => total + d.valor, 0) || 0;
-                      const salarioLiquido = salarioBruto + comissoes - totalDescontos;
+                      const salarioLiquido = salarioComNivel + comissoes - totalDescontos;
                       return salarioLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     }
                   })()}
@@ -1461,10 +1486,11 @@ function Home() {
                 <div className="stat-content">
                   <h3>Salário Base</h3>
                   <p className="stat-value">
-                    {user?.salarioBruto ? 
-                      user.salarioBruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
-                      'R$ 0,00'
-                    }
+                    {(() => {
+                      if (!user?.salarioBruto) return 'R$ 0,00';
+                      const salarioComNivel = calcularSalarioComNivel(user.salarioBruto, user.nivel);
+                      return salarioComNivel.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    })()}
                   </p>
                 </div>
               </div>
@@ -1488,7 +1514,11 @@ function Home() {
                 <div className="stat-content">
                   <h3>Salário Líquido Total</h3>
                   <p className="stat-value highlight-value">
-                    {(totalComissoesCalculado + (user?.salarioBruto || 0) - (descontos?.reduce((total, d) => total + d.valor, 0) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {(() => {
+                      const salarioComNivel = calcularSalarioComNivel(user?.salarioBruto || 0, user?.nivel);
+                      const totalDescontos = descontos?.reduce((total, d) => total + d.valor, 0) || 0;
+                      return (totalComissoesCalculado + salarioComNivel - totalDescontos).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    })()}
                   </p>
                 </div>
               </div>
@@ -1920,11 +1950,24 @@ function Home() {
                                   className="salary-input"
                                   autoFocus
                                 />
+                                <select
+                                  value={editingNivel}
+                                  onChange={(e) => setEditingNivel(e.target.value)}
+                                  className="nivel-select"
+                                >
+                                  <option value="">Selecione o nível</option>
+                                  {Object.entries(niveisSupoerte).map(([codigo, info]) => (
+                                    <option key={codigo} value={codigo}>
+                                      {codigo} - {info.nome} ({info.porcentagem}% aumento)
+                                    </option>
+                                  ))}
+                                </select>
                                 <div className="salary-actions">
                                   <button
                                     onClick={() => {
                                       const valorNumerico = obterValorNumericoSalario(editingSalary);
-                                      handleUpdateSalary(userData.id, valorNumerico);
+                                      const nivel = editingNivel || userData.nivel;
+                                      handleUpdateSalary(userData.id, valorNumerico, nivel);
                                     }}
                                     className="btn-save-salary"
                                     disabled={!editingSalary || obterValorNumericoSalario(editingSalary) === 0 || editingUser === userData.id + '_saving'}
@@ -1942,6 +1985,7 @@ function Home() {
                                     onClick={() => {
                                       setEditingUser(null);
                                       setEditingSalary('');
+                                      setEditingNivel('');
                                     }}
                                     className="btn-cancel-salary"
                                   >
@@ -1953,16 +1997,24 @@ function Home() {
                               <div className="salary-display">
                                 <span className="salary-value">
                                   {userData.salarioBruto ? 
-                                    userData.salarioBruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
+                                    calcularSalarioComNivel(userData.salarioBruto, userData.nivel).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
                                     'R$ 0,00'
                                   }
                                 </span>
+                                {userData.nivel && (
+                                  <div className="nivel-badge">
+                                    <span className="nivel-codigo">Nível {userData.nivel}</span>
+                                    <span className="nivel-nome">{niveisSupoerte[userData.nivel]?.nome}</span>
+                                    <span className="nivel-porcentagem">+{userData.porcentagem_aumento || 0}%</span>
+                                  </div>
+                                )}
                                 <button
                                   onClick={() => {
                                     setEditingUser(userData.id);
                                     const valorAtual = userData.salarioBruto || 0;
                                     const valorEmCentavos = valorAtual * 100;
                                     setEditingSalary(formatarSalario(valorEmCentavos.toString()));
+                                    setEditingNivel(userData.nivel || '');
                                   }}
                                   className="btn-edit-salary"
                                   title="Editar salário"
@@ -2016,10 +2068,11 @@ function Home() {
                           <div className="summary-item total">
                             <label>Salário Líquido:</label>
                             <span className="total-value">
-                              {userData.totalFinal ? 
-                                userData.totalFinal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
-                                (userData.salarioBruto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                              }
+                              {(() => {
+                                const salarioComNivel = calcularSalarioComNivel(userData.salarioBruto || 0, userData.nivel);
+                                const salarioLiquido = salarioComNivel + (userData.totalComissoes || 0) - (userData.totalDescontos || 0);
+                                return salarioLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                              })()}
                             </span>
                           </div>
                         </div>
@@ -2063,12 +2116,15 @@ function Home() {
                   <h3>Salário Bruto</h3>
                 </div>
                 <div className="card-value salary-value">
-                  {user?.salarioBruto ? 
-                    user.salarioBruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
-                    'R$ 0,00'
-                  }
+                  {(() => {
+                    if (!user?.salarioBruto) return 'R$ 0,00';
+                    const salarioComNivel = calcularSalarioComNivel(user.salarioBruto, user.nivel);
+                    return salarioComNivel.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                  })()}
                 </div>
-                <div className="card-subtitle">Base mensal</div>
+                <div className="card-subtitle">
+                  {user?.nivel ? `Com nível ${user.nivel} (+${user.porcentagem_aumento || 0}%)` : 'Base mensal'}
+                </div>
               </div>
 
               {/* Total de Comissões */}
@@ -2110,9 +2166,10 @@ function Home() {
                 <div className="card-value net-salary-value">
                   {(() => {
                     const salarioBruto = userSummaryData?.salarioBruto || user?.salarioBruto || 0;
+                    const salarioComNivel = calcularSalarioComNivel(salarioBruto, user?.nivel);
                     const totalComissoes = userSummaryData?.totalComissoes || 0;
                     const totalDescontos = descontos.reduce((total, d) => total + d.valor, 0);
-                    const salarioLiquido = salarioBruto + totalComissoes - totalDescontos;
+                    const salarioLiquido = salarioComNivel + totalComissoes - totalDescontos;
                     return salarioLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                   })()}
                 </div>
@@ -2406,7 +2463,7 @@ function Home() {
                               </button>
                               <button
                                 className="btn-delete-discount"
-                                onClick={() => handleDeleteDesconto(desconto.id)}
+                                onClick={() => handleDeleteDesconto(desconto)}
                                 title="Excluir desconto"
                               >
                                 🗑️
@@ -2480,6 +2537,47 @@ function Home() {
               <button
                 className="btn-modal-confirm"
                 onClick={confirmarExclusao}
+              >
+                Confirmar Exclusão
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmação de exclusão de desconto */}
+      {showDeleteDescontoModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Confirmar Exclusão de Desconto</h3>
+            </div>
+            <div className="modal-body">
+              {descontoToDelete && (
+                <>
+                  <p>
+                    Você tem certeza que deseja excluir o desconto{' '}
+                    <strong>"{descontoToDelete.descricao}"</strong>?
+                  </p>
+                  <p>
+                    Valor: <strong>R$ {descontoToDelete.valor?.toFixed(2)?.replace('.', ',')}</strong>
+                  </p>
+                  <p className="modal-warning">
+                    ⚠️ Esta ação não pode ser desfeita.
+                  </p>
+                </>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button
+                className="btn-modal-cancel"
+                onClick={cancelarExclusaoDesconto}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn-modal-confirm"
+                onClick={confirmarExclusaoDesconto}
               >
                 Confirmar Exclusão
               </button>

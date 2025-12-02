@@ -1931,7 +1931,7 @@ function Home() {
                           <h3>{userData.nome}</h3>
                           <p className="user-email">{userData.email}</p>
                           <span className={`user-role ${userData.role}`}>
-                            {userData.role === 'admin' ? 'Administrador' : 'Supervisor'}
+                            {userData.role === 'admin' ? 'Administrador' : 'Suporte'}
                           </span>
                         </div>
                       </div>

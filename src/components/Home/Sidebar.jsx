@@ -65,7 +65,7 @@ export default function Sidebar({ open, onClose, onNavigate, currentPage = null 
             </div>
             <div className="user-details">
               <span className="user-name">{user.nome}</span>
-              <span className="user-role">{user.role === 'admin' ? 'Administrador' : 'SUP'}</span>
+              <span className="user-role">{user.role === 'admin' ? 'Administrador' : 'Suporte'}</span>
               {user.role === 'sup' && user.nivel && (
                 <span className="user-nivel">Nível {user.nivel}</span>
               )}

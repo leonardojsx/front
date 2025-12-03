@@ -8,6 +8,7 @@ import './DiscountMobile.css';
 import './LargeScreenUsers.css';
 import './HighlightCard.css';
 import './Niveis.css';
+import './template-styles.css';
 import logo from '../../images/logo.png';
 
 import api from '../../services/api';
@@ -74,6 +75,29 @@ function Home() {
   const [editingNivel, setEditingNivel] = useState('');
   const [summaryData, setSummaryData] = useState([]);
   const [userSummaryData, setUserSummaryData] = useState(null); // Para dados do usuário logado (sup)
+
+  // Estados para templates de comissão
+  const [comissaoTemplates, setComissaoTemplates] = useState([]);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [modalTab, setModalTab] = useState('list');
+  const [searchTemplate, setSearchTemplate] = useState('');
+  const [templateSearchTerm, setTemplateSearchTerm] = useState('');
+  const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+    confirmText: 'Confirmar',
+    cancelText: 'Cancelar'
+  });
+  const [templateForm, setTemplateForm] = useState({
+    titulo: '',
+    valor: '',
+    porcentagem: ''
+  });
+  const [templateErrors, setTemplateErrors] = useState({});
 
   // Estados para descontos
   const [descontos, setDescontos] = useState([]);
@@ -604,7 +628,6 @@ function Home() {
       
       // Verificar se a data é válida
       if (isNaN(dataObj.getTime())) {
-        console.warn('Data inválida recebida:', data);
         return '';
       }
       
@@ -617,7 +640,6 @@ function Home() {
       
       return `${ano}-${mes}-${dia}T${hora}:${minuto}`;
     } catch (error) {
-      console.error('Erro ao formatar data para input:', error);
       return '';
     }
   };
@@ -631,13 +653,11 @@ function Home() {
       const dataObj = new Date(dataInput);
       
       if (isNaN(dataObj.getTime())) {
-        console.warn('Data do input inválida:', dataInput);
         return '';
       }
       
       return dataObj.toISOString();
     } catch (error) {
-      console.error('Erro ao converter data do input:', error);
       return '';
     }
   };
@@ -745,8 +765,42 @@ function Home() {
     }
   }, [location.state, navigate]);
 
+  // Effect para carregar templates de comissão
+  useEffect(() => {
+    if (activeView === 'comissoes') {
+      carregarTemplates();
+    } else {
+      // Limpar campo de busca quando sai da view de comissões
+      setTemplateSearchTerm('');
+      setShowTemplateDropdown(false);
+    }
+  }, [activeView]);
 
+  // Effect para limpar busca de template ao entrar na view de comissões
+  useEffect(() => {
+    if (activeView === 'comissoes') {
+      setTemplateSearchTerm('');
+      setShowTemplateDropdown(false);
+    }
+  }, [activeView]);
 
+  // Templates filtrados para busca no modal
+  const filteredTemplates = useMemo(() => {
+    if (!searchTemplate) return comissaoTemplates;
+    return comissaoTemplates.filter(template => 
+      template.titulo.toLowerCase().includes(searchTemplate.toLowerCase())
+    );
+  }, [comissaoTemplates, searchTemplate]);
+
+  // Templates filtrados para o campo de autocompletar (máximo 10)
+  const filteredTemplatesForDropdown = useMemo(() => {
+    if (!templateSearchTerm.trim()) return [];
+    return comissaoTemplates
+      .filter(template => 
+        template.titulo.toLowerCase().includes(templateSearchTerm.toLowerCase())
+      )
+      .slice(0, 10);
+  }, [comissaoTemplates, templateSearchTerm]);
 
   const formatarMoeda = (valor) => {
     const numero = valor.replace(/\D/g, '');
@@ -1041,6 +1095,210 @@ function Home() {
     }
   };
 
+  // Funções para templates de comissão
+  const carregarTemplates = async () => {
+    try {
+      const response = await api.get('/comissao-template');
+      setComissaoTemplates(response.data || []);
+    } catch (error) {
+      setComissaoTemplates([]);
+      // Não mostrar erro se for apenas problema de carregamento de templates
+    }
+  };
+
+  const handleTemplateFormChange = (field, value) => {
+    setTemplateForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    // Limpar erro do campo específico
+    if (templateErrors[field]) {
+      setTemplateErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
+  };
+
+  const validarTemplateForm = () => {
+    const errors = {};
+    
+    if (!templateForm.titulo.trim()) {
+      errors.titulo = 'Título é obrigatório';
+    }
+    
+    // Validar porcentagem apenas se fornecida
+    if (templateForm.porcentagem && templateForm.porcentagem !== '') {
+      const porcentagem = Number(templateForm.porcentagem);
+      if (isNaN(porcentagem) || porcentagem < 0 || porcentagem > 100) {
+        errors.porcentagem = 'Porcentagem deve ser um número válido entre 0 e 100';
+      }
+    }
+
+    return errors;
+  };
+
+  const handleSalvarTemplate = async (e) => {
+    e.preventDefault();
+    
+    const errors = validarTemplateForm();
+    setTemplateErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+
+    try {
+      const templateData = {
+        titulo: templateForm.titulo.trim(),
+        valor: templateForm.valor && templateForm.valor.trim() !== '' ? templateForm.valor.replace(/[^0-9.,]/g, '').replace(',', '.') : null,
+        porcentagem: templateForm.porcentagem && templateForm.porcentagem.trim() !== '' ? templateForm.porcentagem : null
+      };
+
+      await api.post('/comissao-template', templateData);
+      
+      toast.success('Template salvo com sucesso!');
+      setShowTemplateModal(false);
+      setTemplateForm({
+        titulo: '',
+        valor: '',
+        porcentagem: ''
+      });
+      setTemplateErrors({});
+      carregarTemplates();
+    } catch (error) {
+      toast.error(editingTemplate ? 'Erro ao atualizar template' : 'Erro ao salvar template');
+    }
+  };
+
+  const handleEditTemplate = (template) => {
+    setEditingTemplate(template);
+    setTemplateForm({
+      titulo: template.titulo,
+      valor: template.valor ? formatarMoeda(template.valor.toString()) : '',
+      porcentagem: template.porcentagem ? template.porcentagem.toString() : ''
+    });
+    setTemplateErrors({});
+    setModalTab('create');
+  };
+
+  const showConfirmModal = (title, message, onConfirm, confirmText = 'Confirmar', cancelText = 'Cancelar') => {
+    setConfirmModal({
+      show: true,
+      title,
+      message,
+      onConfirm,
+      confirmText,
+      cancelText
+    });
+  };
+
+  const hideConfirmModal = () => {
+    setConfirmModal({
+      show: false,
+      title: '',
+      message: '',
+      onConfirm: null,
+      confirmText: 'Confirmar',
+      cancelText: 'Cancelar'
+    });
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmModal.onConfirm) {
+      confirmModal.onConfirm();
+    }
+    hideConfirmModal();
+  };
+
+  const deleteTemplate = async (templateId) => {
+    try {
+      await api.delete(`/comissao-template/${templateId}`);
+      toast.success('Template excluído com sucesso!');
+      carregarTemplates();
+    } catch (error) {
+      toast.error('Erro ao excluir template');
+    }
+  };
+
+  const handleDeleteTemplate = (templateId, templateTitle) => {
+    showConfirmModal(
+      'Excluir Template',
+      `Tem certeza que deseja excluir o template "${templateTitle}"? Esta ação não pode ser desfeita.`,
+      () => deleteTemplate(templateId),
+      'Excluir',
+      'Cancelar'
+    );
+  };
+
+  const handleCancelTemplate = () => {
+    setEditingTemplate(null);
+    setTemplateForm({
+      titulo: '',
+      valor: '',
+      porcentagem: ''
+    });
+    setTemplateErrors({});
+    setModalTab('list');
+    setSearchTemplate('');
+    setShowTemplateModal(false);
+  };
+
+  const aplicarTemplate = (template) => {
+    setFormTitulo(template.titulo);
+    if (template.porcentagem) {
+      setFormPorcentagem(template.porcentagem.toString());
+    }
+    if (template.valor) {
+      setFormValorVenda(formatarMoeda(template.valor.toString()));
+    }
+    
+    // Limpar erros relacionados
+    setErros(prev => ({
+      ...prev,
+      titulo: '',
+      porcentagem: '',
+      valorVenda: template.valor ? '' : prev.valorVenda
+    }));
+
+    toast.success(`Template "${template.titulo}" aplicado!`);
+  };
+
+  const handleTemplateSearchChange = (value) => {
+    setTemplateSearchTerm(value);
+    setShowTemplateDropdown(value.length > 0);
+  };
+
+  const handleTemplateSearchFocus = () => {
+    if (templateSearchTerm.length > 0) {
+      setShowTemplateDropdown(true);
+    }
+  };
+
+  const handleTemplateSearchBlur = () => {
+    // Delay para permitir clique nas opções
+    setTimeout(() => setShowTemplateDropdown(false), 200);
+  };
+
+  const clearTemplateSearch = () => {
+    setTemplateSearchTerm('');
+    setShowTemplateDropdown(false);
+  };
+
+  // Effect para fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.template-search-container')) {
+        setShowTemplateDropdown(false);
+      }
+    };
+
+    if (showTemplateDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showTemplateDropdown]);
+
   const handleSubmitCadastro = async (e) => {
     e.preventDefault();
 
@@ -1320,15 +1578,76 @@ function Home() {
               )}
               <div className="form-field">
                 <label htmlFor="titulo">Título *</label>
-                <input
-                  id="titulo"
-                  type="text"
-                  value={formTitulo}
-                  onChange={(e) => handleTituloChange(e.target.value)}
-                  className={erros.titulo ? 'error' : ''}
-                  placeholder="Digite o título da comissão"
-                  maxLength="100"
-                />
+                <div className="titulo-input-container">
+                  <input
+                    id="titulo"
+                    type="text"
+                    value={formTitulo}
+                    onChange={(e) => handleTituloChange(e.target.value)}
+                    className={erros.titulo ? 'error' : ''}
+                    placeholder="Digite o título da comissão"
+                    maxLength="100"
+                  />
+                  {comissaoTemplates.length > 0 && (
+                    <div className="template-search-container">
+                      <input
+                        type="text"
+                        className="template-search-input"
+                        placeholder="Buscar template..."
+                        value={templateSearchTerm}
+                        onChange={(e) => handleTemplateSearchChange(e.target.value)}
+                        onFocus={handleTemplateSearchFocus}
+                        onBlur={handleTemplateSearchBlur}
+                      />
+                      {templateSearchTerm && (
+                        <button
+                          type="button"
+                          className="template-clear-btn"
+                          onClick={clearTemplateSearch}
+                        >
+                          ×
+                        </button>
+                      )}
+                      {showTemplateDropdown && filteredTemplatesForDropdown.length > 0 && (
+                        <div className="template-dropdown">
+                          {filteredTemplatesForDropdown.map(template => (
+                            <div
+                              key={template.id}
+                              className="template-dropdown-item"
+                              onClick={() => aplicarTemplate(template)}
+                            >
+                              <div className="template-dropdown-title">{template.titulo}</div>
+                              <div className="template-dropdown-details">
+                                {template.valor && `Valor: ${formatarMoeda(template.valor.toString())}`}
+                                {template.valor && template.porcentagem && ' • '}
+                                {template.porcentagem && `${template.porcentagem}%`}
+                                {!template.valor && !template.porcentagem && 'Sem valores'}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {showTemplateDropdown && templateSearchTerm && filteredTemplatesForDropdown.length === 0 && (
+                        <div className="template-dropdown template-no-results">
+                          <div className="template-dropdown-item">
+                            Nenhum template encontrado
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-add-template"
+                    onClick={() => {
+                      setModalTab(comissaoTemplates.length > 0 ? 'list' : 'create');
+                      setShowTemplateModal(true);
+                    }}
+                    title={comissaoTemplates.length > 0 ? 'Gerenciar templates de comissão' : 'Criar novo template de comissão'}
+                  >
+                    +
+                  </button>
+                </div>
                 {erros.titulo && <span className="error-message">{erros.titulo}</span>}
               </div>
               <div className="form-field-group">
@@ -2580,6 +2899,198 @@ function Home() {
                 onClick={confirmarExclusaoDesconto}
               >
                 Confirmar Exclusão
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Templates de Comissão */}
+      {showTemplateModal && (
+        <div className="modal-overlay" onClick={() => setShowTemplateModal(false)}>
+          <div className="modal-content template-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Gerenciar Templates de Comissão</h3>
+              <button 
+                className="modal-close" 
+                onClick={() => setShowTemplateModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-tabs">
+              <button 
+                className={`modal-tab ${modalTab === 'list' ? 'active' : ''}`}
+                onClick={() => setModalTab('list')}
+              >
+                Templates Salvos
+              </button>
+              <button 
+                className={`modal-tab ${modalTab === 'create' ? 'active' : ''}`}
+                onClick={() => setModalTab('create')}
+              >
+                {editingTemplate ? 'Editar Template' : 'Novo Template'}
+              </button>
+            </div>
+
+            {modalTab === 'list' ? (
+              <>
+                {comissaoTemplates.length > 0 && (
+                  <div className="search-template">
+                    <input
+                      type="text"
+                      placeholder="Pesquisar templates..."
+                      value={searchTemplate}
+                      onChange={(e) => setSearchTemplate(e.target.value)}
+                    />
+                  </div>
+                )}
+                
+                <div className="templates-list">
+                  {filteredTemplates.length > 0 ? (
+                    filteredTemplates.map(template => (
+                      <div key={template.id} className="template-item">
+                        <div className="template-info">
+                          <div className="template-title">{template.titulo}</div>
+                          <div className="template-details">
+                            {template.valor && `Valor: ${formatarMoeda(template.valor.toString())}`}
+                            {template.valor && template.porcentagem && ' • '}
+                            {template.porcentagem && `${template.porcentagem}%`}
+                            {!template.valor && !template.porcentagem && 'Sem valores definidos'}
+                          </div>
+                        </div>
+                        <div className="template-actions">
+                          <button
+                            className="btn-template-action btn-edit"
+                            onClick={() => handleEditTemplate(template)}
+                            title="Editar template"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            className="btn-template-action btn-delete"
+                            onClick={() => handleDeleteTemplate(template.id, template.titulo)}
+                            title="Excluir template"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="empty-templates">
+                      <i>📋</i>
+                      {searchTemplate ? 'Nenhum template encontrado' : 'Nenhum template cadastrado'}
+                      <br />
+                      {!searchTemplate && (
+                        <button 
+                          className="btn-save" 
+                          style={{marginTop: '16px'}}
+                          onClick={() => setModalTab('create')}
+                        >
+                          Criar Primeiro Template
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <form onSubmit={handleSalvarTemplate} className="template-form">
+                <div className="form-field">
+                  <label htmlFor="template-titulo">Título do Template *</label>
+                  <input
+                    id="template-titulo"
+                    type="text"
+                    value={templateForm.titulo}
+                    onChange={(e) => handleTemplateFormChange('titulo', e.target.value)}
+                    className={templateErrors.titulo ? 'error' : ''}
+                    placeholder="Ex: Comissão Padrão 10%"
+                    maxLength="100"
+                  />
+                  {templateErrors.titulo && <span className="error-message">{templateErrors.titulo}</span>}
+                </div>
+
+                <div className="form-field-group">
+                  <div className="form-field">
+                    <label htmlFor="template-valor">Valor Fixo (opcional)</label>
+                    <input
+                      id="template-valor"
+                      type="text"
+                      value={templateForm.valor}
+                      onChange={(e) => handleTemplateFormChange('valor', formatarMoeda(e.target.value))}
+                      placeholder="R$ 0,00"
+                    />
+                    <small>Deixe em branco se não quiser valor fixo</small>
+                  </div>
+
+                  <div className="form-field">
+                    <label htmlFor="template-porcentagem">Porcentagem (opcional)</label>
+                    <input
+                      id="template-porcentagem"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={templateForm.porcentagem}
+                      onChange={(e) => handleTemplateFormChange('porcentagem', e.target.value)}
+                      placeholder="10.5"
+                    />
+                    <small>Deixe em branco se não quiser porcentagem</small>
+                  </div>
+                </div>
+
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="btn-cancel"
+                    onClick={handleCancelTemplate}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-save"
+                  >
+                    {editingTemplate ? 'Atualizar Template' : 'Salvar Template'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação */}
+      {confirmModal.show && (
+        <div className="modal-overlay" onClick={hideConfirmModal}>
+          <div className="modal-content confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{confirmModal.title}</h3>
+            </div>
+            
+            <div className="confirm-modal-body">
+              <div className="confirm-icon">
+                ⚠️
+              </div>
+              <p>{confirmModal.message}</p>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={hideConfirmModal}
+              >
+                {confirmModal.cancelText}
+              </button>
+              <button
+                type="button"
+                className="btn-delete-confirm"
+                onClick={handleConfirmAction}
+              >
+                {confirmModal.confirmText}
               </button>
             </div>
           </div>

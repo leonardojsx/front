@@ -68,6 +68,32 @@ function Treinamento() {
       .replace(/(-\d{2})\d+?$/, '$1');
   };
 
+  // Função para formatar CPF
+  const formatarCPF = (valor) => {
+    const numero = valor.replace(/\D/g, '');
+    return numero
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
+  };
+
+  // Função para detectar tipo de documento automaticamente
+  const detectarTipoDocumento = (valor) => {
+    const numero = valor.replace(/\D/g, '');
+    if (numero.length <= 11) {
+      return 'cpf';
+    } else {
+      return 'cnpj';
+    }
+  };
+
+  // Função para formatar documento automaticamente
+  const formatarDocumento = (valor) => {
+    const tipo = detectarTipoDocumento(valor);
+    return tipo === 'cpf' ? formatarCPF(valor) : formatarCNPJ(valor);
+  };
+
   const getWeekDays = (weekDate) => {
     const days = [];
     const startOfWeek = new Date(weekDate);
@@ -213,11 +239,11 @@ function Treinamento() {
     }
 
     if (!trainingForm.cnpj.trim()) {
-      errors.cnpj = 'CNPJ é obrigatório';
+      errors.cnpj = 'CPF/CNPJ é obrigatório';
     } else {
-      const cnpjNumbers = trainingForm.cnpj.replace(/\D/g, '');
-      if (cnpjNumbers.length !== 14) {
-        errors.cnpj = 'CNPJ deve ter 14 dígitos';
+      const documentNumbers = trainingForm.cnpj.replace(/\D/g, '');
+      if (documentNumbers.length !== 11 && documentNumbers.length !== 14) {
+        errors.cnpj = 'CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos';
       }
     }
 
@@ -268,9 +294,13 @@ function Treinamento() {
       const dataInicio = `${trainingForm.data}T${trainingForm.horaInicio}:00`;
       const dataFim = `${trainingForm.data}T${trainingForm.horaFim}:00`;
 
+      const documentoLimpo = trainingForm.cnpj.replace(/\D/g, '');
+      const tipoDocumento = detectarTipoDocumento(documentoLimpo);
+      
       const trainingData = {
         titulo: trainingForm.titulo.trim(),
-        cnpj: trainingForm.cnpj.replace(/\D/g, ''),
+        cnpj: documentoLimpo,
+        tipoDocumento: tipoDocumento,
         data_inicio: dataInicio,
         data_fim: dataFim,
         status: trainingForm.status,
@@ -293,7 +323,7 @@ function Treinamento() {
               setCurrentTrainingData(trainingData);
               setShowCommissionModal(true);
             } else {
-              toast.info('Treinamento salvo. Já existe comissão cadastrada para este CNPJ.');
+              toast.info('Treinamento salvo. Já existe comissão cadastrada para este CPF/CNPJ.');
             }
           } catch (err) {
             // Silenciar erro de verificação de comissões
@@ -330,7 +360,7 @@ function Treinamento() {
     setEditingTraining(training);
     setTrainingForm({
       titulo: training.titulo,
-      cnpj: formatarCNPJ(training.cnpj),
+      cnpj: formatarDocumento(training.cnpj),
       data: formatDateFromISO(training.data_inicio),
       horaInicio: formatTimeFromISO(training.data_inicio),
       horaFim: formatTimeFromISO(training.data_fim),
@@ -447,7 +477,7 @@ function Treinamento() {
                     <div key={training.id} className="training-card">
                       <div className="training-title">{training.titulo}</div>
                       <div className="training-user">{training.usuario || 'Não atribuído'}</div>
-                      <div className="training-cnpj">{formatarCNPJ(training.cnpj)}</div>
+                      <div className="training-cnpj">{formatarDocumento(training.cnpj)}</div>
                       <div className="training-time">
                         {new Date(training.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(training.data_fim).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </div>
@@ -500,14 +530,14 @@ function Treinamento() {
               </div>
 
               <div className="form-field">
-                <label htmlFor="training-cnpj">CNPJ *</label>
+                <label htmlFor="training-cnpj">CPF/CNPJ *</label>
                 <input
                   id="training-cnpj"
                   type="text"
                   value={trainingForm.cnpj}
-                  onChange={(e) => setTrainingForm(prev => ({ ...prev, cnpj: formatarCNPJ(e.target.value) }))}
+                  onChange={(e) => setTrainingForm(prev => ({ ...prev, cnpj: formatarDocumento(e.target.value) }))}
                   className={trainingErrors.cnpj ? 'error' : ''}
-                  placeholder="XX.XXX.XXX/XXXX-XX"
+                  placeholder="Digite CPF ou CNPJ"
                   maxLength="18"
                 />
                 {trainingErrors.cnpj && <span className="error-message">{trainingErrors.cnpj}</span>}
@@ -617,7 +647,7 @@ function Treinamento() {
                 <strong>✅ Treinamento salvo com sucesso!</strong>
               </p>
               <p>
-                Nenhuma comissão encontrada para o CNPJ <strong>{formatarCNPJ(currentTrainingData?.cnpj || '')}</strong>.
+                Nenhuma comissão encontrada para o CPF/CNPJ <strong>{formatarDocumento(currentTrainingData?.cnpj || '')}</strong>.
               </p>
               <p>
                 Deseja cadastrar uma comissão para este cliente agora?
@@ -625,7 +655,7 @@ function Treinamento() {
               <div className="training-data-box">
                 <strong>Dados do treinamento:</strong>
                 <div>📋 Título: {currentTrainingData?.titulo}</div>
-                <div>🏢 CNPJ: {formatarCNPJ(currentTrainingData?.cnpj || '')}</div>
+                <div>🏢 CPF/CNPJ: {formatarDocumento(currentTrainingData?.cnpj || '')}</div>
               </div>
             </div>
             <div className="modal-actions">
@@ -666,7 +696,7 @@ function Treinamento() {
                 <div className="training-data-box">
                   <strong>Dados do treinamento:</strong>
                   <div>📋 Título: {trainingToDelete.titulo}</div>
-                  <div>🏢 CNPJ: {formatarCNPJ(trainingToDelete.cnpj)}</div>
+                  <div>🏢 CPF/CNPJ: {formatarDocumento(trainingToDelete.cnpj)}</div>
                   <div>📅 Data: {new Date(trainingToDelete.data_inicio).toLocaleDateString('pt-BR')}</div>
                   <div>👤 Usuário: {trainingToDelete.usuario || 'Não atribuído'}</div>
                 </div>

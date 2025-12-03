@@ -1908,7 +1908,7 @@ body.no-scroll {
 .comissoes-table th:nth-child(3),
 .comissoes-table td:nth-child(3) {
   width: 25%;
-  /* CNPJ */
+  /* CPF/CNPJ */
 }
 
 .comissoes-table th:nth-child(4),

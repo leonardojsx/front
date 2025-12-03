@@ -822,6 +822,45 @@ function Home() {
       .replace(/(-\d{2})\d+?$/, '$1');
   };
 
+  // Função para formatar CPF
+  const formatarCPF = (valor) => {
+    const numero = valor.replace(/\D/g, '');
+    return numero
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
+  };
+
+  // Função para detectar tipo de documento automaticamente
+  const detectarTipoDocumento = (valor) => {
+    const numero = valor.replace(/\D/g, '');
+    if (numero.length <= 11) {
+      return 'cpf';
+    } else {
+      return 'cnpj';
+    }
+  };
+
+  // Função para formatar documento automaticamente
+  const formatarDocumento = (valor) => {
+    const tipo = detectarTipoDocumento(valor);
+    return tipo === 'cpf' ? formatarCPF(valor) : formatarCNPJ(valor);
+  };
+
+  // Função para validar documento automaticamente
+  const validarDocumento = (valor) => {
+    if (!valor) return 'CPF ou CNPJ é obrigatório';
+    const numero = valor.replace(/\D/g, '');
+    
+    // Se não tem dígitos suficientes, não mostrar erro ainda
+    if (numero.length === 0) return 'CPF ou CNPJ é obrigatório';
+    if (numero.length < 11) return ''; // Não mostrar erro enquanto digita
+    
+    const tipo = detectarTipoDocumento(valor);
+    return tipo === 'cpf' ? validarCPF(valor) : validarCNPJ(valor);
+  };
+
   const obterValorNumerico = (valorFormatado) => {
     return valorFormatado.replace(/[^\d]/g, '') / 100;
   };
@@ -882,6 +921,12 @@ function Home() {
   const validarCNPJ = (cnpj) => {
     if (!cnpj) return 'CNPJ é obrigatório';
     const numero = cnpj.replace(/\D/g, '');
+    
+    // Se tem menos de 14 dígitos e não está completo, não validar ainda
+    if (numero.length < 14) {
+      return numero.length > 0 ? '' : 'CNPJ é obrigatório';
+    }
+    
     if (numero.length !== 14) return 'CNPJ deve ter 14 dígitos';
 
     if (/^(\d)\1+$/.test(numero)) return 'CNPJ inválido';
@@ -913,6 +958,42 @@ function Home() {
     resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
     if (resultado !== parseInt(digitos.charAt(1))) return 'CNPJ inválido';
 
+    return '';
+  };
+
+  // Função para validar CPF
+  const validarCPF = (cpf) => {
+    if (!cpf) return 'CPF é obrigatório';
+    const numero = cpf.replace(/\D/g, '');
+    
+    // Se tem menos de 11 dígitos e não está completo, não validar ainda
+    if (numero.length < 11) {
+      return numero.length > 0 ? '' : 'CPF é obrigatório';
+    }
+    
+    if (numero.length !== 11) return 'CPF deve ter 11 dígitos';
+    
+    // Verificar se todos os dígitos são iguais
+    if (/^(\d)\1+$/.test(numero)) return 'CPF inválido';
+    
+    // Validar primeiro dígito verificador
+    let soma = 0;
+    for (let i = 1; i <= 9; i++) {
+      soma += parseInt(numero.substring(i - 1, i)) * (11 - i);
+    }
+    let resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(numero.substring(9, 10))) return 'CPF inválido';
+    
+    // Validar segundo dígito verificador
+    soma = 0;
+    for (let i = 1; i <= 10; i++) {
+      soma += parseInt(numero.substring(i - 1, i)) * (12 - i);
+    }
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(numero.substring(10, 11))) return 'CPF inválido';
+    
     return '';
   };
 
@@ -1025,9 +1106,9 @@ function Home() {
   };
 
   const handleCnpjChange = (valor) => {
-    const valorFormatado = formatarCNPJ(valor);
+    const valorFormatado = formatarDocumento(valor);
     setFormCnpj(valorFormatado);
-    const erro = validarCNPJ(valorFormatado);
+    const erro = validarDocumento(valorFormatado);
     setErros(prev => ({ ...prev, cnpj: erro }));
   };
 
@@ -1082,7 +1163,8 @@ function Home() {
         setFormDataHora(dataFormatada);
       }
 
-      setFormCnpj(formatarCNPJ(comissao.cnpj || ''));
+      const documentoFormatado = formatarDocumento(comissao.cnpj || '');
+      setFormCnpj(documentoFormatado);
       setEditingComissao(comissao);
       handleViewChange('comissoes');
 
@@ -1337,9 +1419,13 @@ function Home() {
     }
 
     const valorNumerico = obterValorNumerico(formValorVenda);
+    const documentoLimpo = formCnpj.replace(/\D/g, '');
+    const tipoDocumento = detectarTipoDocumento(documentoLimpo);
+    
     const novaComissao = {
       titulo: formTitulo.trim(),
-      cnpj: formCnpj.replace(/\D/g, ''),
+      cnpj: documentoLimpo,
+      tipoDocumento: tipoDocumento,
       valor: valorNumerico,
       porcentagem: parseFloat(formPorcentagem),
       valorPorcentagem: valorComissaoCalculado,
@@ -1726,14 +1812,14 @@ function Home() {
                 {erros.dataHora && <span className="error-message">{erros.dataHora}</span>}
               </div>
               <div className="form-field">
-                <label htmlFor="cnpj">CNPJ *</label>
+                <label htmlFor="cnpj">CPF/CNPJ *</label>
                 <input
                   id="cnpj"
                   type="text"
                   value={formCnpj}
                   onChange={(e) => handleCnpjChange(e.target.value)}
                   className={erros.cnpj ? 'error' : ''}
-                  placeholder="XX.XXX.XXX/XXXX-XX"
+                  placeholder="Digite CPF ou CNPJ"
                   maxLength="18"
                 />
                 {erros.cnpj && <span className="error-message">{erros.cnpj}</span>}
@@ -1956,7 +2042,7 @@ function Home() {
                         <option value="todos">Todos os campos</option>
                         <option value="titulo">Título</option>
                         <option value="usuario">Usuário</option>
-                        <option value="cnpj">CNPJ</option>
+                        <option value="cnpj">CPF/CNPJ</option>
                       </select>
                     </div>
                   </div>
@@ -2128,7 +2214,7 @@ function Home() {
                       <tr>
                         <th>Título</th>
                         <th>Usuário</th>
-                        <th>CNPJ</th>
+                        <th>CPF/CNPJ</th>
                         <th>Valor</th>
                       </tr>
                     </thead>

@@ -738,7 +738,7 @@ function Home() {
       
       // Pré-preencher os dados
       if (cnpj) {
-        setFormCnpj(formatarCNPJ(cnpj));
+        setFormCnpj(formatarDocumento(cnpj));
       }
       if (titulo) {
         setFormTitulo(titulo);

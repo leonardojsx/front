@@ -3066,9 +3066,11 @@ body.no-scroll {
   border: 1px solid var(--gray-200);
   border-radius: var(--border-radius-md);
   padding: 12px;
+  padding-right: 70px; /* Espaço para os botões */
   position: relative;
   transition: var(--transition-normal);
   box-shadow: var(--shadow-sm);
+  min-height: 120px; /* Altura mínima para evitar sobreposição */
 }
 
 .training-card:hover {
@@ -3083,6 +3085,10 @@ body.no-scroll {
   color: #1e293b;
   margin-bottom: 8px;
   line-height: 1.3;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  max-width: 100%; /* Garante que não ultrapasse o container */
 }
 
 .training-user {
@@ -3131,6 +3137,24 @@ body.no-scroll {
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   color: #991b1b;
   border: 1px solid #dc2626;
+}
+
+.training-observacao {
+  font-size: 11px;
+  color: #64748b;
+  font-style: italic;
+  margin-bottom: 6px;
+  padding: 4px 6px;
+  background: #f8fafc;
+  border-left: 3px solid #e2e8f0;
+  border-radius: 0 4px 4px 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+}
+
+.training-observacao:empty {
+  display: none;
 }
 
 .btn-edit-training {

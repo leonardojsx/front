@@ -38,7 +38,8 @@ function Treinamento() {
     horaInicio: '',
     horaFim: '',
     status: 'planejado',
-    usuario_id: ''
+    usuario_id: '',
+    observacao: ''
   });
 
   const [trainingErrors, setTrainingErrors] = useState({
@@ -199,7 +200,8 @@ function Treinamento() {
       horaInicio: '',
       horaFim: '',
       status: 'planejado',
-      usuario_id: ''
+      usuario_id: '',
+      observacao: ''
     });
     setTrainingErrors({
       titulo: '',
@@ -304,7 +306,8 @@ function Treinamento() {
         data_inicio: dataInicio,
         data_fim: dataFim,
         status: trainingForm.status,
-        usuario_id: trainingForm.usuario_id || null
+        usuario_id: trainingForm.usuario_id || null,
+        observacao: trainingForm.observacao.trim() || null
       };
 
       if (editingTraining) {
@@ -365,7 +368,8 @@ function Treinamento() {
       horaInicio: formatTimeFromISO(training.data_inicio),
       horaFim: formatTimeFromISO(training.data_fim),
       status: training.status,
-      usuario_id: training.usuario_id || ''
+      usuario_id: training.usuario_id || '',
+      observacao: training.observacao || ''
     });
     setShowTrainingModal(true);
   };
@@ -478,6 +482,7 @@ function Treinamento() {
                       <div className="training-title">{training.titulo}</div>
                       <div className="training-user">{training.usuario || 'Não atribuído'}</div>
                       <div className="training-cnpj">{formatarDocumento(training.cnpj)}</div>
+                      {training.observacao && <div className="training-observacao">{training.observacao}</div>}
                       <div className="training-time">
                         {new Date(training.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(training.data_fim).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </div>
@@ -592,6 +597,27 @@ function Treinamento() {
                   <option value="concluido">Concluído</option>
                   <option value="cancelado">Cancelado</option>
                 </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="training-observacao">Observação</label>
+                <textarea
+                  id="training-observacao"
+                  value={trainingForm.observacao}
+                  onChange={(e) => setTrainingForm(prev => ({ ...prev, observacao: e.target.value }))}
+                  placeholder="Observações ou avisos sobre o treinamento (opcional)"
+                  rows="3"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    minHeight: '60px'
+                  }}
+                />
               </div>
 
               <div className="form-field">

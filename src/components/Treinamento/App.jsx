@@ -26,6 +26,8 @@ function Treinamento() {
   const [usuarios, setUsuarios] = useState([]);
   const [showCommissionModal, setShowCommissionModal] = useState(false);
   const [currentTrainingData, setCurrentTrainingData] = useState(null);
+  const [showTransformCommissionModal, setShowTransformCommissionModal] = useState(false);
+  const [transformTrainingData, setTransformTrainingData] = useState(null);
   const { sidebarOpen, closeSidebar, toggleSidebar } = useSidebar();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [trainingToDelete, setTrainingToDelete] = useState(null);
@@ -215,6 +217,67 @@ function Treinamento() {
   const closeCommissionModal = () => {
     setShowCommissionModal(false);
     setCurrentTrainingData(null);
+  };
+
+  const closeTransformCommissionModal = () => {
+    setShowTransformCommissionModal(false);
+    setTransformTrainingData(null);
+  };
+
+  const handleTransformToCommission = async () => {
+    if (!trainingForm.cnpj.trim()) {
+      toast.error('CPF/CNPJ é obrigatório para transformar em comissão.');
+      return;
+    }
+
+    const documentoLimpo = trainingForm.cnpj.replace(/\D/g, '');
+    
+    try {
+      // Verificar se já existe comissão para este CPF/CNPJ
+      const commissionCheck = await api.get(`/training/check-commissions/${documentoLimpo}`);
+      
+      const transformData = {
+        titulo: trainingForm.titulo,
+        cnpj: documentoLimpo,
+        tipoDocumento: detectarTipoDocumento(documentoLimpo)
+      };
+
+      setTransformTrainingData(transformData);
+      
+      if (commissionCheck.data.hasCommissions) {
+        // Mostrar modal de confirmação informando que já existe comissão
+        setShowTransformCommissionModal(true);
+      } else {
+        // Redirecionar direto para cadastro de comissão
+        navigate('/home', { 
+          state: { 
+            redirectToCommissions: true,
+            prefilledData: {
+              cnpj: documentoLimpo,
+              titulo: trainingForm.titulo
+            }
+          }
+        });
+        closeTrainingModal();
+      }
+    } catch (error) {
+      toast.error('Erro ao verificar comissões existentes.');
+    }
+  };
+
+  const handleTransformCommissionRedirect = () => {
+    // Redirecionar para página de comissões com dados pré-preenchidos
+    navigate('/home', { 
+      state: { 
+        redirectToCommissions: true,
+        prefilledData: {
+          cnpj: transformTrainingData?.cnpj,
+          titulo: transformTrainingData?.titulo
+        }
+      }
+    });
+    closeTransformCommissionModal();
+    closeTrainingModal();
   };
 
   const handleCommissionRedirect = () => {
@@ -648,6 +711,18 @@ function Treinamento() {
               <button type="button" onClick={closeTrainingModal} className="btn-modal-cancel" disabled={submittingForm}>
                 Cancelar
               </button>
+              {user?.role === 'admin' && (
+                <button 
+                  type="button" 
+                  className="btn-modal-commission" 
+                  disabled={submittingForm}
+                  onClick={handleTransformToCommission}
+                  title="Transformar em comissão"
+                >
+                  <SiCashapp />
+                  Transformar em Comissão
+                </button>
+              )}
               <button 
                 type="button" 
                 className="btn-modal-confirm" 
@@ -698,6 +773,49 @@ function Treinamento() {
                 className="btn-modal-confirm"
               >
                 Cadastrar Comissão
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação para Transformar em Comissão */}
+      {showTransformCommissionModal && (
+        <div className="modal-overlay">
+          <div className="modal-content transform-commission-modal">
+            <div className="modal-header">
+              <h3>Transformar em Comissão</h3>
+            </div>
+            <div className="modal-body">
+              <p>
+                <strong>⚠️ Comissão existente encontrada!</strong>
+              </p>
+              <p>
+                Já existe uma comissão cadastrada para o CPF/CNPJ <strong>{formatarDocumento(transformTrainingData?.cnpj || '')}</strong>.
+              </p>
+              <p>
+                Deseja prosseguir mesmo assim e cadastrar uma nova comissão?
+              </p>
+              <div className="training-data-box">
+                <strong>Dados que serão utilizados:</strong>
+                <div>📋 Título: {transformTrainingData?.titulo}</div>
+                <div>🏢 CPF/CNPJ: {formatarDocumento(transformTrainingData?.cnpj || '')}</div>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                onClick={closeTransformCommissionModal}
+                className="btn-modal-cancel"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleTransformCommissionRedirect}
+                className="btn-modal-confirm"
+              >
+                Prosseguir
               </button>
             </div>
           </div>

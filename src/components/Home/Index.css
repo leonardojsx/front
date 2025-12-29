@@ -2647,10 +2647,12 @@ body.no-scroll {
   justify-content: flex-end;
   gap: 12px;
   border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
 }
 
 .btn-modal-cancel,
-.btn-modal-confirm {
+.btn-modal-confirm,
+.btn-modal-commission {
   padding: 10px 20px;
   border: none;
   border-radius: var(--border-radius-md);
@@ -2679,6 +2681,34 @@ body.no-scroll {
 .btn-modal-confirm:hover {
   background-color: #dc2626;
   box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.3);
+}
+
+.btn-modal-commission {
+  background: var(--gradient-secondary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--secondary-color);
+}
+
+.btn-modal-commission:hover {
+  background: var(--gradient-accent);
+  box-shadow: var(--shadow-secondary);
+  transform: translateY(-1px);
+}
+
+.btn-modal-commission:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-modal-commission:disabled:hover {
+  background: var(--gradient-secondary);
+  box-shadow: none;
+  transform: none;
 }
 
 @keyframes modalFadeIn {
@@ -2837,8 +2867,14 @@ body.no-scroll {
   }
 
   .btn-modal-cancel,
-  .btn-modal-confirm {
+  .btn-modal-confirm,
+  .btn-modal-commission {
     width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .btn-modal-commission:last-child {
+    margin-bottom: 0;
   }
 
   .modern-chart-container {
@@ -3348,6 +3384,36 @@ body.no-scroll {
   color: #1e293b;
   display: block;
   margin-bottom: 8px;
+}
+
+/* Estilo específico para modal de transformar em comissão */
+.transform-commission-modal .modal-body {
+  text-align: left;
+}
+
+.transform-commission-modal .modal-body p {
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.transform-commission-modal .training-data-box {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--secondary-color);
+  border-radius: var(--border-radius-md);
+  padding: 12px;
+  margin: 16px 0;
+}
+
+.transform-commission-modal .training-data-box strong {
+  color: var(--secondary-dark);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.transform-commission-modal .training-data-box div {
+  margin: 4px 0;
+  color: var(--gray-700);
+  font-size: 14px;
 }
 
 /* Estilo específico para modal de exclusão */

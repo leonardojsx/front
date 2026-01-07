@@ -3959,6 +3959,168 @@ body.no-scroll {
 }
 
 /* ===========================
+   MONTH NAVIGATION STYLES
+   =========================== */
+
+.month-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.btn-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
+}
+
+.btn-month-nav:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-month-nav:active {
+  transform: translateY(0);
+}
+
+.month-nav-text {
+  display: inline;
+}
+
+.current-month-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  min-width: 200px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.month-year {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  text-transform: capitalize;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.btn-current-month {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 4px rgba(16, 185, 129, 0.2);
+}
+
+.btn-current-month:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Responsividade da navegação de meses */
+@media (max-width: 768px) {
+  .month-navigation {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .btn-month-nav {
+    min-width: auto;
+    width: 44px;
+    height: 44px;
+    padding: 8px;
+    border-radius: 50%;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .month-nav-text {
+    display: none;
+  }
+
+  .current-month-display {
+    flex: 1;
+    min-width: auto;
+    padding: 8px 12px;
+  }
+
+  .month-year {
+    font-size: 16px;
+  }
+
+  .btn-current-month {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .month-navigation {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .btn-month-nav {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .current-month-display {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .month-year {
+    font-size: 14px;
+  }
+
+  .btn-current-month {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+}
+
+/* ===========================
    USER MANAGEMENT STYLES
    =========================== */
 

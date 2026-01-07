@@ -1,0 +1,90 @@
+/* ==========================================================================
+   LOADING STATES - ESTADOS DE CARREGAMENTO
+   ========================================================================== */
+
+/* Spinner de Loading */
+.loading-spinner {
+  border: 3px solid var(--gray-200);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Estados de Loading */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--gray-600);
+  font-size: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-200);
+  margin: 20px 0;
+}
+
+.no-data-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--gray-500);
+  font-size: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-200);
+  margin: 20px 0;
+}
+
+/* Indicador de loading na navegação */
+.loading-indicator {
+  font-size: 0.9em;
+  opacity: 0.8;
+  animation: pulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
+/* Botões desabilitados durante loading */
+.btn-month-nav.loading,
+.btn-current-month.loading {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.btn-month-nav:disabled,
+.btn-current-month:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Melhoria na responsividade dos estados de loading */
+@media (max-width: 768px) {
+  .loading-state,
+  .no-data-state {
+    padding: 40px 15px;
+    margin: 15px 0;
+  }
+  
+  .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+  }
+}

@@ -9,6 +9,7 @@ import './LargeScreenUsers.css';
 import './HighlightCard.css';
 import './Niveis.css';
 import './template-styles.css';
+import './Loading.css';
 import logo from '../../images/logo.png';
 
 import api from '../../services/api';
@@ -16,7 +17,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { toast, ToastContainer } from 'react-toastify';
 
-import { FaSearch, FaEdit, FaTrashAlt, FaCalendarAlt, FaTimes, FaSort, FaInfoCircle } from "react-icons/fa";
+import { FaSearch, FaEdit, FaTrashAlt, FaCalendarAlt, FaTimes, FaSort, FaInfoCircle, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { SiCashapp } from "react-icons/si";
 import HamburgerButton from './HamburgerButton.jsx';
 import Sidebar from './Sidebar.jsx';
@@ -74,7 +75,11 @@ function Home() {
   const [editingSalary, setEditingSalary] = useState('');
   const [editingNivel, setEditingNivel] = useState('');
   const [summaryData, setSummaryData] = useState([]);
+  const [loadingSummary, setLoadingSummary] = useState(false); // Loading específico para dados de summary
+  const [summaryCache, setSummaryCache] = useState({}); // Cache para evitar requisições desnecessárias
   const [userSummaryData, setUserSummaryData] = useState(null); // Para dados do usuário logado (sup)
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // Mês atual (1-12)
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear()); // Ano atual
 
   // Estados para templates de comissão
   const [comissaoTemplates, setComissaoTemplates] = useState([]);
@@ -331,38 +336,58 @@ function Home() {
   }
 
   // Função para buscar dados resumidos dos usuários com salários e comissões
-  // Debounce para fetchSummaryData
-  const fetchSummaryDataTimeoutRef = useRef(null);
-  
-  const fetchSummaryData = useCallback(async (immediate = false) => {
-    // Cancelar chamada anterior se existir
-    if (fetchSummaryDataTimeoutRef.current) {
-      clearTimeout(fetchSummaryDataTimeoutRef.current);
-    }
-
-    const executeFetch = async () => {
-      try {
-        const res = await api.get('/schedule/users-summary');
-        setSummaryData(res.data || []);
-      } catch (err) {
-        setSummaryData([]);
-        toast.warn('Não foi possível carregar o resumo dos usuários.', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+  const fetchSummaryData = useCallback(async (immediate = true, month = null, year = null) => {
+    try {
+      // Usar mês e ano passados como parâmetro, ou valores atuais do estado
+      const targetMonth = month !== null ? month : selectedMonth;
+      const targetYear = year !== null ? year : selectedYear;
+      
+      // Criar chave de cache
+      const cacheKey = `${targetYear}-${targetMonth}`;
+      
+      // Verificar se já temos dados em cache
+      if (summaryCache[cacheKey]) {
+        setSummaryData(summaryCache[cacheKey]);
+        return;
       }
-    };
-
-    if (immediate) {
-      await executeFetch();
-    } else {
-      // Debounce de 300ms para evitar chamadas excessivas
-      fetchSummaryDataTimeoutRef.current = setTimeout(executeFetch, 300);
+      
+      const startTime = performance.now();
+      
+      // Ativar loading
+      setLoadingSummary(true);
+      
+      const res = await api.get(`/schedule/users-summary?month=${targetMonth}&year=${targetYear}`);
+      const data = res.data || [];
+      
+      // Armazenar em cache
+      setSummaryCache(prev => ({
+        ...prev,
+        [cacheKey]: data
+      }));
+      
+      setSummaryData(data);
+      
+      const endTime = performance.now();
+    } catch (err) {
+      setSummaryData([]);
+      toast.warn('Não foi possível carregar o resumo dos usuários.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } finally {
+      // Desativar loading
+      setLoadingSummary(false);
     }
+  }, [selectedMonth, selectedYear, summaryCache]);
+
+  // Função para limpar cache quando dados são modificados
+  const invalidateCache = useCallback(() => {
+    console.log('🧹 Limpando cache de dados');
+    setSummaryCache({});
   }, []);
 
   // Função para atualizar salário e nível do usuário
@@ -410,6 +435,7 @@ function Home() {
       
       // Invalidar cache do dashboard e atualizar dados em background
       dashboardCacheRef.current.timestamp = 0; // Força refresh no próximo acesso
+      invalidateCache(); // Limpar cache de summary
       setTimeout(() => {
         fetchSummaryData();
         if (user && user.role !== 'admin') {
@@ -451,17 +477,18 @@ function Home() {
   };
 
   // FUNÇÕES PARA DESCONTOS
-  const fetchDescontos = async () => {
+  const fetchDescontos = useCallback(async () => {
     setLoadingDescontos(true);
     try {
-      const res = await api.get('/discount');
+      // Usar mês e ano selecionados na interface
+      const res = await api.get(`/discount?ano=${selectedYear}&mes=${selectedMonth}`);
       setDescontos(res.data || []);
     } catch (error) {
       toast.error('Erro ao carregar descontos');
     } finally {
       setLoadingDescontos(false);
     }
-  };
+  }, [selectedMonth, selectedYear]);
 
   const handleDescontoSubmit = async (e) => {
     e.preventDefault();
@@ -593,7 +620,7 @@ function Home() {
   };
 
   // Função para buscar descontos de um usuário específico
-  const fetchDescontosDoUsuario = async (userId) => {
+  const fetchDescontosDoUsuario = useCallback(async (userId) => {
     if (!userId) {
       setDescontosDoUsuario([]);
       return;
@@ -601,12 +628,8 @@ function Home() {
     
     setLoadingDescontos(true);
     try {
-      // Obter ano e mês atuais para filtrar descontos
-      const hoje = new Date();
-      const anoAtual = hoje.getFullYear();
-      const mesAtual = hoje.getMonth() + 1;
-      
-      const res = await api.get(`/discount/user/${userId}?ano=${anoAtual}&mes=${mesAtual}`);
+      // Usar mês e ano selecionados na interface em vez da data atual
+      const res = await api.get(`/discount/user/${userId}?ano=${selectedYear}&mes=${selectedMonth}`);
       
       const descontosData = Array.isArray(res.data) ? res.data : [];
       
@@ -617,7 +640,7 @@ function Home() {
     } finally {
       setLoadingDescontos(false);
     }
-  };
+  }, [selectedMonth, selectedYear]);
 
   // Função para formatar data/hora para datetime-local (considerando fuso horário local)
   const formatarDataHoraParaInput = (data) => {
@@ -705,6 +728,24 @@ function Home() {
       }
     }
   }, [activeView]);
+
+  // Effect para recarregar dados dos usuários quando o mês ou ano mudarem
+  useEffect(() => {
+    if (activeView === 'usuarios') {
+      fetchSummaryData(true, selectedMonth, selectedYear);
+    }
+    
+    // Recarregar descontos quando mês/ano mudarem
+    if (activeView === 'descontos') {
+      fetchDescontos();
+      // Se há um usuário selecionado, recarregar seus descontos também
+      if (user?.role === 'sup') {
+        fetchDescontosDoUsuario(user.id);
+      } else if (selectedUserId) {
+        fetchDescontosDoUsuario(selectedUserId);
+      }
+    }
+  }, [selectedMonth, selectedYear, activeView]);
 
   // Effect para sincronizar descontosDoUsuario com descontos para usuário sup (tela inicial, deduções e comissões)
   useEffect(() => {
@@ -2322,10 +2363,90 @@ function Home() {
               </p>
             </div>
 
+            {/* Navegação de Meses */}
+            <div className="month-navigation">
+              <button
+                onClick={() => {
+                  console.log('⬅️ Botão mês anterior clicado. Estado atual:', { selectedMonth, selectedYear });
+                  if (selectedMonth === 1) {
+                    const newMonth = 12;
+                    const newYear = selectedYear - 1;
+                    setSelectedMonth(newMonth);
+                    setSelectedYear(newYear);
+                    console.log('📅 Mudando para dezembro do ano anterior:', { newMonth, newYear });
+                  } else {
+                    const newMonth = selectedMonth - 1;
+                    setSelectedMonth(newMonth);
+                    console.log('📅 Mudando para mês anterior:', { newMonth, selectedYear });
+                  }
+                }}
+                className={`btn-month-nav ${loadingSummary ? 'loading' : ''}`}
+                title="Mês anterior"
+                disabled={loadingSummary}
+              >
+                <FaChevronLeft />
+                <span className="month-nav-text">Anterior</span>
+              </button>
+              
+              <div className="current-month-display">
+                <span className="month-year">
+                  {new Date(selectedYear, selectedMonth - 1).toLocaleString('pt-BR', { 
+                    month: 'long', 
+                    year: 'numeric' 
+                  })}
+                  {loadingSummary && <span className="loading-indicator"> ⏳</span>}
+                </span>
+                <button
+                  onClick={() => {
+                    console.log('📆 Navegação: Voltar ao mês atual');
+                    const now = new Date();
+                    const currentMonth = now.getMonth() + 1;
+                    const currentYear = now.getFullYear();
+                    console.log('🏠 Botão atual clicado. Voltando para:', { currentMonth, currentYear });
+                    setSelectedMonth(currentMonth);
+                    setSelectedYear(currentYear);
+                  }}
+                  className={`btn-current-month ${loadingSummary ? 'loading' : ''}`}
+                  title="Voltar ao mês atual"
+                  disabled={loadingSummary}
+                >
+                  Atual
+                </button>
+              </div>
+              
+              <button
+                onClick={() => {
+                  console.log('➡️ Botão próximo mês clicado. Estado atual:', { selectedMonth, selectedYear });
+                  if (selectedMonth === 12) {
+                    const newMonth = 1;
+                    const newYear = selectedYear + 1;
+                    setSelectedMonth(newMonth);
+                    setSelectedYear(newYear);
+                    console.log('📅 Mudando para janeiro do próximo ano:', { newMonth, newYear });
+                  } else {
+                    const newMonth = selectedMonth + 1;
+                    setSelectedMonth(newMonth);
+                    console.log('📅 Mudando para próximo mês:', { newMonth, selectedYear });
+                  }
+                }}
+                className={`btn-month-nav ${loadingSummary ? 'loading' : ''}`}
+                title="Próximo mês"
+                disabled={loadingSummary}
+              >
+                <span className="month-nav-text">Próximo</span>
+                <FaChevronRight />
+              </button>
+            </div>
+
             <div className="users-summary">
-              {!summaryData || summaryData.length === 0 ? (
+              {loadingSummary ? (
                 <div className="loading-state">
-                  <p>Carregando dados dos usuários...</p>
+                  <div className="loading-spinner"></div>
+                  <p>Carregando dados do mês selecionado...</p>
+                </div>
+              ) : !summaryData || summaryData.length === 0 ? (
+                <div className="no-data-state">
+                  <p>Nenhum dado encontrado para este período.</p>
                 </div>
               ) : (
                 <div className="users-grid">

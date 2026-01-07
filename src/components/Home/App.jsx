@@ -59,6 +59,8 @@ function Home() {
   const [formTitulo, setFormTitulo] = useState('');
   const [formValorVenda, setFormValorVenda] = useState('');
   const [formPorcentagem, setFormPorcentagem] = useState('');
+  const [formValorComissao, setFormValorComissao] = useState('');
+  const [isValorManual, setIsValorManual] = useState(false);
   const [formUsuarioSelecionado, setFormUsuarioSelecionado] = useState('');
   const [formDataHora, setFormDataHora] = useState('');
   const [formCnpj, setFormCnpj] = useState('');
@@ -915,9 +917,12 @@ function Home() {
   };
 
   const valorComissaoCalculado = useMemo(() => {
+    if (isValorManual) {
+      return formValorComissao ? obterValorNumerico(formValorComissao) : 0;
+    }
     const valorNumerico = obterValorNumerico(formValorVenda);
     return valorNumerico && formPorcentagem ? (valorNumerico * parseFloat(formPorcentagem)) / 100 : 0;
-  }, [formValorVenda, formPorcentagem]);
+  }, [formValorVenda, formPorcentagem, formValorComissao, isValorManual]);
   const validarTitulo = (titulo) => {
     if (!titulo.trim()) return 'Título é obrigatório';
     if (titulo.trim().length < 3) return 'Título deve ter pelo menos 3 caracteres';
@@ -934,11 +939,21 @@ function Home() {
   };
 
   const validarPorcentagem = (porcentagem) => {
-    if (!porcentagem) return 'Porcentagem é obrigatória';
+    if (!porcentagem) return ''; // Porcentagem não é mais obrigatória
     const num = parseFloat(porcentagem);
     if (isNaN(num)) return 'Porcentagem deve ser um número';
     if (num <= 0) return 'Porcentagem deve ser maior que 0';
     if (num > 100) return 'Porcentagem não pode ser maior que 100%';
+    return '';
+  };
+
+  const validarValorComissao = (valor) => {
+    if (isValorManual && (!valor || valor === 'R$ 0,00')) return 'Valor de comissão é obrigatório quando inserido manualmente';
+    if (valor && valor !== 'R$ 0,00') {
+      const valorNumerico = obterValorNumerico(valor);
+      if (valorNumerico < 0) return 'Valor não pode ser negativo';
+      if (valorNumerico > 999999999) return 'Valor muito alto';
+    }
     return '';
   };
 
@@ -1132,6 +1147,36 @@ function Home() {
     setFormPorcentagem(valorLimpo);
     const erro = validarPorcentagem(valorLimpo);
     setErros(prev => ({ ...prev, porcentagem: erro }));
+    
+    // Se tiver porcentagem, desabilitar valor manual
+    if (valorLimpo && !isValorManual) {
+      setFormValorComissao('');
+    }
+  };
+
+  const handleValorComissaoChange = (valor) => {
+    const formatted = formatarMoeda(valor);
+    setFormValorComissao(formatted);
+    const erro = validarValorComissao(formatted);
+    setErros(prev => ({ ...prev, valorComissao: erro }));
+    
+    // Se tiver valor manual, limpar porcentagem
+    if (formatted && formatted !== 'R$ 0,00' && !isValorManual) {
+      setIsValorManual(true);
+      setFormPorcentagem('');
+    }
+  };
+
+  const toggleValorManual = () => {
+    setIsValorManual(!isValorManual);
+    if (!isValorManual) {
+      // Mudando para manual - limpar porcentagem
+      setFormPorcentagem('');
+    } else {
+      // Mudando para calculado - limpar valor manual
+      setFormValorComissao('');
+    }
+    setErros(prev => ({ ...prev, porcentagem: '', valorComissao: '' }));
   };
 
   const handleUsuarioChange = (valor) => {
@@ -1157,6 +1202,8 @@ function Home() {
     setFormTitulo('');
     setFormValorVenda('');
     setFormPorcentagem('');
+    setFormValorComissao('');
+    setIsValorManual(false);
     setFormUsuarioSelecionado('');
     const agora = new Date();
     const dataHoraAtual = formatarDataHoraParaInput(agora);
@@ -1167,6 +1214,7 @@ function Home() {
       titulo: '',
       valorVenda: '',
       porcentagem: '',
+      valorComissao: '',
       usuario: '',
       dataHora: '',
       cnpj: ''
@@ -1197,6 +1245,10 @@ function Home() {
       }
 
       setFormPorcentagem(comissao.porcentagem?.toString() || '');
+      setFormValorComissao(comissao.valorPorcentagem ? 
+        comissao.valorPorcentagem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '');
+      // É manual se não tem porcentagem mas tem valor de comissão
+      setIsValorManual((!comissao.porcentagem || comissao.porcentagem === 0) && comissao.valorPorcentagem > 0);
       setFormUsuarioSelecionado(comissao.idUsuario || comissao.usuario_id || '');
 
       if (comissao.data) {
@@ -1428,14 +1480,22 @@ function Home() {
     const errosTitulo = validarTitulo(formTitulo);
     const errosValorVenda = validarValorVenda(formValorVenda);
     const errosPorcentagem = validarPorcentagem(formPorcentagem);
+    const errosValorComissao = validarValorComissao(formValorComissao);
     const errosUsuario = validarUsuario(formUsuarioSelecionado);
     const errosDataHora = validarDataHora(formDataHora);
     const errosCnpj = validarCNPJ(formCnpj);
+
+    // Validar se pelo menos porcentagem ou valor manual foi informado
+    let erroComissaoObrigatoria = '';
+    if (!formPorcentagem && (!formValorComissao || formValorComissao === 'R$ 0,00')) {
+      erroComissaoObrigatoria = 'Informe a porcentagem ou o valor da comissão manualmente';
+    }
 
     const novosErros = {
       titulo: errosTitulo,
       valorVenda: errosValorVenda,
       porcentagem: errosPorcentagem,
+      valorComissao: errosValorComissao || erroComissaoObrigatoria,
       usuario: errosUsuario,
       dataHora: errosDataHora,
       cnpj: errosCnpj
@@ -1468,8 +1528,9 @@ function Home() {
       cnpj: documentoLimpo,
       tipoDocumento: tipoDocumento,
       valor: valorNumerico,
-      porcentagem: parseFloat(formPorcentagem),
+      porcentagem: formPorcentagem ? parseFloat(formPorcentagem) : null,
       valorPorcentagem: valorComissaoCalculado,
+      isValorManual: isValorManual,
       idUsuario: formUsuarioSelecionado,
       data: converterDataDoInput(formDataHora),
       temTaxa: true
@@ -1791,7 +1852,7 @@ function Home() {
                   {erros.valorVenda && <span className="error-message">{erros.valorVenda}</span>}
                 </div>
                 <div className="form-field">
-                  <label htmlFor="porcentagem">Porcentagem (%) *</label>
+                  <label htmlFor="porcentagem">Porcentagem (%)</label>
                   <input
                     id="porcentagem"
                     type="text"
@@ -1799,18 +1860,46 @@ function Home() {
                     onChange={(e) => handlePorcentagemChange(e.target.value)}
                     className={erros.porcentagem ? 'error' : ''}
                     placeholder="Ex: 5.5"
+                    disabled={isValorManual}
                   />
                   {erros.porcentagem && <span className="error-message">{erros.porcentagem}</span>}
                 </div>
               </div>
               <div className="form-field">
-                <label>Valor Comissão (Calculado)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
+                  <label htmlFor="valorComissao">Valor Comissão *</label>
+                  <button
+                    type="button"
+                    onClick={toggleValorManual}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '12px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      background: isValorManual ? '#007bff' : '#f8f9fa',
+                      color: isValorManual ? 'white' : '#333',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isValorManual ? 'Manual' : 'Calculado'}
+                  </button>
+                </div>
                 <input
+                  id="valorComissao"
                   type="text"
-                  value={valorComissaoCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  disabled
-                  className="calculated-field"
+                  value={isValorManual ? formValorComissao : 
+                    valorComissaoCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  onChange={(e) => handleValorComissaoChange(e.target.value)}
+                  className={erros.valorComissao ? 'error' : (isValorManual ? '' : 'calculated-field')}
+                  disabled={!isValorManual}
+                  placeholder="R$ 0,00"
                 />
+                {erros.valorComissao && <span className="error-message">{erros.valorComissao}</span>}
+                {!isValorManual && (
+                  <small style={{ color: '#666', fontSize: '12px' }}>
+                    Calculado automaticamente: {formValorVenda} × {formPorcentagem}%
+                  </small>
+                )}
               </div>
               <div className="form-field">
                 <label htmlFor="usuario">Usuário *</label>
@@ -1881,7 +1970,7 @@ function Home() {
                     Object.values(erros).some(erro => erro !== '') ||
                     !formTitulo ||
                     !formValorVenda ||
-                    !formPorcentagem ||
+                    (!formPorcentagem && (!formValorComissao || formValorComissao === 'R$ 0,00')) ||
                     !formUsuarioSelecionado ||
                     !formDataHora ||
                     !formCnpj

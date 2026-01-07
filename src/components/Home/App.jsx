@@ -1237,10 +1237,9 @@ function Home() {
     try {
       setFormTitulo(comissao.titulo || '');
 
-      const valorParaFormatar = comissao.valorPorcentagem || comissao.valor;
-
-      if (valorParaFormatar) {
-        const valorEmCentavos = valorParaFormatar < 1000 ? valorParaFormatar * 100 : valorParaFormatar;
+      // Valor de venda deve sempre vir do campo "valor", não do "valorPorcentagem"
+      if (comissao.valor) {
+        const valorEmCentavos = comissao.valor < 1000 ? comissao.valor * 100 : comissao.valor;
         setFormValorVenda(formatarMoeda(valorEmCentavos.toString()));
       }
 

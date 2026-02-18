@@ -3107,6 +3107,9 @@ body.no-scroll {
   transition: var(--transition-normal);
   box-shadow: var(--shadow-sm);
   min-height: 120px; /* Altura mínima para evitar sobreposição */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Garante que conteúdo interno não vaze */
 }
 
 .training-card:hover {
@@ -3184,9 +3187,33 @@ body.no-scroll {
   background: #f8fafc;
   border-left: 3px solid #e2e8f0;
   border-radius: 0 4px 4px 0;
+  line-height: 1.4;
+  
+  /* Estado padrão: 2 linhas com ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  line-height: 1.4;
+  
+  /* Transição suave ao expandir */
+  transition: all 0.3s ease;
+  max-height: 32px; /* ~2 linhas */
+}
+
+/* Ao fazer hover no card, a observação expande */
+.training-card:hover .training-observacao {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow-y: auto;
+  max-height: 200px; /* Limite máximo de altura */
+  text-overflow: clip;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .training-observacao:empty {

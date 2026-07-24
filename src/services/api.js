@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: 'https://outros-sistemas-xamuel-app.nk9iqz.easypanel.host'
+  baseURL: 'https://outros-sistemas-xamuel-app.nk9iqz.easypanel.host/'
 })
 
 // Interceptor para adicionar token automaticamente
